@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Database storage comparisons — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Database storage comparisons — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / DATABASE STORAGE COMPARISONS</p><h1 id="database-storage-comparisons">Database storage comparisons</h1>
+<p>The latest <a href="canonical-storage-comparison.html">canonical SQL storage comparison</a>
+reloads SlopDB, SQLite and DuckDB from identical frozen SQL files across supported
+page sizes and default controls. Every row/column and logical byte total is
+verified after reopen and again after maintenance. SlopDB compression windows
+match blocks and all SSTables are rewritten into L6 before final size is reported.
+No benchmark workload runs during these measurements.</p>
+<h2 id="historical-small-dataset-comparison-2026-10-11">Historical small-dataset comparison, 2026-10-11</h2>
+<p>The <a href="storage-large-comparison.html">larger comparison</a> measures both workloads
+above 100 MiB per engine, including TPC-H SF=0.2 and a 10.5-million-row TPC-C
+snapshot.</p>
+<p>SlopDB&#39;s footprint depends substantially on compaction. On an identical TPC-C
+snapshot it occupies 8.07 MiB after loading and closing, and 1.39 MiB after
+VACUUM. SQLite occupies 3.31 / 3.16 MiB and DuckDB 6.26 / 6.26 MiB. At TPC-H
+SF=0.01, SlopDB is smaller than both engines even before forced compaction.</p>
+<p>These are local measurements of the repository&#39;s reduced TPC-C workload and
+fractional TPC-H data. MiB means 1,048,576 bytes. Sizes include all database
+files, indexes, metadata and lock files; they exclude reports, input tables,
+binaries and profiles. All measured databases are closed, with no WAL files
+remaining. They describe persistent storage, rather than peak disk use while
+loading or running transactions.</p>
+<h2 id="equal-data-comparisons">Equal-data comparisons</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Dataset and storage state</th>
+<th align="right">SlopDB MiB</th>
+<th align="right">SQLite MiB</th>
+<th align="right">DuckDB MiB</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TPC-C identical snapshot, closed</td>
+<td align="right">8.07</td>
+<td align="right">3.31</td>
+<td align="right">6.26</td>
+</tr>
+<tr>
+<td>TPC-C identical snapshot, after maintenance</td>
+<td align="right">1.39</td>
+<td align="right">3.16</td>
+<td align="right">6.26</td>
+</tr>
+<tr>
+<td>TPC-H SF=0.001, closed</td>
+<td align="right">3.16</td>
+<td align="right">1.63</td>
+<td align="right">11.01</td>
+</tr>
+<tr>
+<td>TPC-H SF=0.001, after maintenance</td>
+<td align="right">1.03</td>
+<td align="right">1.62</td>
+<td align="right">11.01</td>
+</tr>
+<tr>
+<td>TPC-H SF=0.01, closed</td>
+<td align="right">13.07</td>
+<td align="right">15.70</td>
+<td align="right">19.26</td>
+</tr>
+<tr>
+<td>TPC-H SF=0.01, after maintenance</td>
+<td align="right">10.28</td>
+<td align="right">15.60</td>
+<td align="right">19.26</td>
+</tr>
+</tbody></table>
+</div><p>TPC-C uses the committed snapshot from the saved DuckDB comparison run:
+83,165 rows across nine tables, including 6,715 orders, 64,190 order lines and
+6,348 history rows. All engines were freshly rebuilt from exactly the same
+values, with the same declared primary keys and customer/order index. Native
+DuckDB BIGINT columns map to INTEGER in SlopDB and SQLite. Every value was
+compared in primary-key order after reopening and again after maintenance.
+SlopDB inserts used prepared statements and batches of 1,000 rows.</p>
+<p>TPC-H uses the retained SlopDB and DuckDB benchmark databases and freshly loaded
+on-disk SQLite databases. Earlier SQLite timings came from an in-memory
+verifier, which has no database directory to measure. New SQLite loads use the
+same hash-verified DBGEN inputs, schema, fourteen secondary indexes, ANALYZE and
+Q15 view. SF=0.001 has 8,695 total rows, including 6,005 lineitems; SF=0.01 has
+86,805 rows, including 60,175 lineitems. All 22 SQLite query results match both
+archived engines at both scales. After maintenance, all 22 queries were checked
+again for every engine and scale, for 132 additional result comparisons.</p>
+<p>Maintenance ran on private copies, preserving the original benchmark databases:
+SlopDB VACUUM flushes and compacts SSTable levels; SQLite VACUUM rewrites its
+database; DuckDB executed VACUUM followed by CHECKPOINT. These are engine-specific
+operations. DuckDB&#39;s file size did not change in these runs.</p>
+<p>New SQLite files use Python SQLite 3.45.1; DuckDB uses 1.5.6. The original TPC-C
+SQLite run used the Go driver&#39;s SQLite 3.51.3. SlopDB used <code>f45ea982792cd25c94478b76dd4bf20ac83bb8eb</code>
+and its default storage settings: 4 MiB memtable, 4 KiB blocks, and auto
+compression. WAL was retained with WAL fsync disabled for new SlopDB/SQLite
+loads; sizes were measured after clean shutdown/checkpointing.</p>
+<h2 id="original-one-minute-tpc-c-databases">Original one-minute TPC-C databases</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Engine</th>
+<th align="right">Committed transactions</th>
+<th align="right">Stored rows</th>
+<th align="right">Closed file bytes</th>
+<th align="right">MiB</th>
+<th align="right">Files</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SlopDB</td>
+<td align="right">133,339</td>
+<td align="right">732,587</td>
+<td align="right">18,951,452</td>
+<td align="right">18.07</td>
+<td align="right">19</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td align="right">159,838</td>
+<td align="right">872,168</td>
+<td align="right">37,978,112</td>
+<td align="right">36.22</td>
+<td align="right">1</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td align="right">14,225</td>
+<td align="right">83,165</td>
+<td align="right">6,565,888</td>
+<td align="right">6.26</td>
+<td align="right">1</td>
+</tr>
+</tbody></table>
+</div><p>These describe the retained <a href="tpcc-comparison.html">one-minute benchmark runs</a>.
+Different throughput produced different amounts of data: SlopDB has 603,420
+order lines, SQLite 719,100 and DuckDB 64,190. These total sizes should be read
+alongside the row counts; use the identical snapshot above to compare storage
+on equal data. Existing database sizes were verified unchanged after inspection;
+SlopDB row counts were obtained from private copies.</p>
+<h2 id="files-allocation-and-compaction">Files, allocation and compaction</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Closed dataset</th>
+<th>SlopDB SSTables + metadata files</th>
+<th>SQLite files</th>
+<th>DuckDB files</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TPC-C identical snapshot</td>
+<td>4 SSTables + MANIFEST + LOCK</td>
+<td>1 SQLite file</td>
+<td>1 DuckDB file</td>
+</tr>
+<tr>
+<td>TPC-H SF=0.001</td>
+<td>3 SSTables + MANIFEST + LOCK</td>
+<td>1 SQLite file</td>
+<td>1 DuckDB file</td>
+</tr>
+<tr>
+<td>TPC-H SF=0.01</td>
+<td>8 SSTables + MANIFEST + LOCK</td>
+<td>1 SQLite file</td>
+<td>1 DuckDB file</td>
+</tr>
+</tbody></table>
+</div><p>SlopDB&#39;s auto policy leaves L0 uncompressed and uses zstd in later levels. The
+fresh TPC-C snapshot has four L0 files totaling 8,460,818 bytes. Its metadata
+and lock file total just 582 bytes. The small TPC-H database also has all data
+in L0. Full compaction moves these files to compressed levels, explaining the
+large reductions. At SF=0.01, 9,715,747 SSTable bytes were already in L1 and
+3,990,196 bytes in L0 before maintenance.</p>
+<p>DuckDB&#39;s measured allocation units are 256 KiB blocks. The closed TPC-H files
+have five free blocks at SF=0.001 and six at SF=0.01, included in their sizes.
+Reported DuckDB sizes immediately after loading were 8.01 and 16.51 MiB;
+the retained files after Q15 setup, query execution and close are 11.01 and
+19.26 MiB. Those different observation points should not be mixed in a table.</p>
+<p>Filesystem allocation was measured independently using <code>st_blocks * 512</code>,
+including directory blocks, and checked against <code>du -s -B1</code>. For the closed
+equal-data cases:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th align="right">SlopDB allocated MiB</th>
+<th align="right">SQLite allocated MiB</th>
+<th align="right">DuckDB allocated MiB</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TPC-C identical snapshot</td>
+<td align="right">8.10</td>
+<td align="right">3.32</td>
+<td align="right">6.27</td>
+</tr>
+<tr>
+<td>TPC-H SF=0.001</td>
+<td align="right">3.18</td>
+<td align="right">1.64</td>
+<td align="right">11.02</td>
+</tr>
+<tr>
+<td>TPC-H SF=0.01</td>
+<td align="right">13.10</td>
+<td align="right">15.71</td>
+<td align="right">19.27</td>
+</tr>
+</tbody></table>
+</div><p>The <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/storage/comparison.json">raw comparison</a> records exact apparent
+and allocated bytes for every file, database paths, table counts, input hashes,
+SSTable level inventories, page/block statistics and maintenance results.
+Normal close and background compaction do not guarantee minimum database size;
+fresh-load layout and write history affect these measurements.</p>
+<h2 id="reproducing-the-measurements">Reproducing the measurements</h2>
+<p>Use the <a href="https://github.com/midom/slopdb/blob/main/cmd/tpcc/compare/README.md">TPC-C comparison runner</a> and
+<a href="https://github.com/midom/slopdb/blob/main/cmd/tpch/README.md">TPC-H runner</a> for the schemas, indexes and input data.
+For an equal-data TPC-C comparison, export a single committed database in
+primary-key order and load its rows and indexes into fresh databases for each
+engine. Check row counts and complete values after reopening. For TPC-H,
+load identical DBGEN files into on-disk SQLite rather than the verifier&#39;s
+in-memory database, then execute and compare all 22 queries.</p>
+<p>Close databases before recording size. Sum regular files&#39; <code>stat().st_size</code>
+for apparent bytes; use <code>du -s -B1 &lt;database-directory&gt;</code> for filesystem allocation.
+Exclude artifacts by storing them outside the database directory. Retain any
+WAL or sidecar files that exist when measuring. To compare maintenance effects,
+copy the closed database, run the operations listed above, close it again and
+repeat size and result checks.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/storage-comparison.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

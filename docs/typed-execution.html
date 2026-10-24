@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Typed analytical execution — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Typed analytical execution — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / TYPED ANALYTICAL EXECUTION</p><h1 id="typed-analytical-execution">Typed analytical execution</h1>
+<p>Single-table streaming aggregates now bind referenced columns to compact numeric
+slots and compile supported expressions into a statement-local instruction
+stream. Physical readers decode up to 128 rows into a reusable value batch;
+filters, group keys and aggregate arguments use slots instead of string-keyed
+row maps and recursive AST interpretation. This path runs automatically for
+eligible queries, including the TPC-H Q1 and Q6 shapes.</p>
+<p>The existing physical reader supplies full scans, bounded primary/secondary
+access, point lookups, covering payloads and deduplicated OR branches. Both
+execution modes share snapshot/transaction-overlay handling, index checks,
+iterator closure, cancellation and aggregate state transitions. Representative
+values are retained once per group; public result maps are built after
+aggregation. Unused variable-width columns are skipped without constructing
+strings or BLOBs. Batch values own decoded text/BLOB contents before reader
+buffers can be reused.</p>
+<p>Compiled expressions support literals, bound parameters, column references,
+arithmetic, comparisons with ordinary affinity rules, AND/OR, BETWEEN/NOT
+BETWEEN, IS/IS NOT, unary signs/NOT and concatenation. Boolean instructions jump
+over short-circuited branches. SQL Values retain exact int64, REAL, NULL, TEXT
+and BLOB representations; arithmetic and comparisons share the interpreted
+executor&#39;s helpers. Aggregate DISTINCT, integer overflow, numeric errors and
+empty-input results use the same aggregate states as before.</p>
+<p>Unsupported expressions, including scalar functions, CASE, IN and subqueries,
+retain the general executor. Joins, ordinary nonaggregate projections and final
+group projection/HAVING/ORDER BY continue using their existing execution paths.
+Eligible prepared statements reuse the compiled instruction structure; ordinary
+statements compile during execution. Registers belong to each private execution
+tree and are not shared concurrently. The typed kernels do not add SIMD or an
+on-disk columnar format. Operator spilling is described separately in
+<a href="query-memory.html">query memory</a>.</p>
+<h2 id="verification-and-kernel-benchmarks">Verification and kernel benchmarks</h2>
+<p>The permanent tests cover independently expected expression results, 2,200
+interpreted-versus-compiled value combinations, skipped columns and buffer
+ownership. End-to-end tests cover multiple batches and a partial tail, Q1/Q6
+results from independent arithmetic, grouping, aliases, DISTINCT, BLOB extrema,
+full/indexed/overlapping access, prepared bindings, transaction overlays,
+rollback, cancellation, reopen, empty input and numeric errors. Existing SQL,
+execution and join reference suites also exercise the enabled path.</p>
+<pre><code class="language-sh">go test ./sql -run &#39;^TestTyped&#39;
+go test ./tests/regression -run &#39;^TestTypedAggregateExecution$&#39;
+go test ./sql -run &#39;^$&#39; -bench &#39;BenchmarkTypedQ[16]Kernel&#39; -benchmem -count=3
+</code></pre>
+<p>An ARM64 development run measured these medians per encoded input row:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Kernel</th>
+<th align="right">Map/AST</th>
+<th align="right">Typed batches</th>
+<th align="right">Allocated bytes</th>
+<th align="right">Allocations</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q6 predicate and SUM argument</td>
+<td align="right">1,497 ns</td>
+<td align="right">818 ns</td>
+<td align="right">176 → 16</td>
+<td align="right">3 → 1</td>
+</tr>
+<tr>
+<td>Q1 predicate, group-key encoding and seven aggregates</td>
+<td align="right">1,660 ns</td>
+<td align="right">1,339 ns</td>
+<td align="right">32 → 16</td>
+<td align="right">3 → 1</td>
+</tr>
+</tbody></table>
+</div><p>These are execution kernels over identical encoded inputs, not complete TPC-H
+query scores. Setup/compilation, storage I/O and group-table lookups are outside
+the timed kernels. Concurrent development jobs caused substantial timing
+variance, especially in Q1 (1,061–2,431 ns for typed batches); allocation counts
+were stable. Run controlled complete-query benchmarks before extrapolating
+these timings to a dataset or throughput claim.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/typed-execution.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

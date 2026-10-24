@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Q6 physical access regression — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Q6 physical access regression — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / Q6 PHYSICAL ACCESS REGRESSION</p><h1 id="q6-physical-access-regression">Q6 physical access regression</h1>
+<p>Profiling the integrated SF=0.2 TPC-H Q6 run found a physical-access regression
+despite the faster typed expression kernel. The database contains 1,199,969
+lineitem rows with identical schema/input files across the before/after loads.</p>
+<p>The old EXPLAIN text reported a table rewind, but its CPU/allocation profiles
+showed the actual selective shipdate-index walk and batched point lookups.
+The integrated distribution cost model charged up to twelve sequential-row
+units per noncovering secondary lookup. That rejected Q6&#39;s approximately 15%
+date range in favor of scanning and decompressing the entire wide table.
+Over 90% of the resulting allocations came from SSTable reading, block
+decompression and iterator keys rather than typed expression evaluation.</p>
+<p>Selecting the index exposed another issue: a single variable-width index range
+uses several normalized, disjoint delimiter bands to preserve shorter-prefix
+TEXT/BLOB ordering. The physical reader treated multiple bands as overlapping
+origins. Its unnecessary deduplication set exceeded the 16 MiB budget share and
+spilled into a temporary LSM engine. The read-query profile consequently
+contained memtable writes and flushes, adding approximately 217 MB of allocation
+per warm execution.</p>
+<p>The reader now deduplicates across separate OR access paths or actually
+overlapping intervals, preserving the bounded disk fallback when needed.
+A sorted disjoint interval union within one index visits each physical entry
+once, and each table row has one entry in that index, so it needs no origin set.
+The noncovering lookup weight now rises from three to six with estimated
+working-set size. Useful approximately 15% ranges remain eligible; broad ranges
+such as 30% still prefer sequential access. Costs remain estimates rather than
+execution constraints, and residual SQL predicates remain intact.</p>
+<p>Three prepared Q6 executions per case, with a GC before each sample, measured:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Build/access</th>
+<th>Warm sample times</th>
+<th>Warm allocated bytes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Baseline, selective index</td>
+<td>2.030–2.036 s</td>
+<td>336.1–336.3 MB</td>
+</tr>
+<tr>
+<td>Integrated, full scan</td>
+<td>2.804–2.813 s</td>
+<td>492.3–492.6 MB</td>
+</tr>
+<tr>
+<td>Index with unnecessary interval deduplication</td>
+<td>2.571–2.614 s</td>
+<td>523.9–524.1 MB</td>
+</tr>
+<tr>
+<td>Corrected index selection and disjoint bands</td>
+<td>1.954–1.969 s</td>
+<td>306.6–306.7 MB</td>
+</tr>
+</tbody></table>
+</div><p>The corrected measurements use the same physical integrated database as the
+full-scan and unnecessary-deduplication cases. CPU/allocation profiles and
+scratch binaries were kept outside the repository. Revenue matched the baseline
+index execution; the full scan&#39;s different accumulation order differed only in
+floating-point rounding. These diagnostic samples explain this regression;
+controlled runs of all 22 queries should check the cost adjustment&#39;s wider
+effects.</p>
+<p>Permanent tests check selective-versus-broad distribution decisions, disjoint,
+touching and overlapping interval shapes, correct shorter-prefix results,
+zero spills for disjoint bands under a 512-byte operator budget, retained OR
+deduplication spills, cleanup and fresh/reopened databases.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/q6-access-regression.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

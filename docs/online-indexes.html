@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Online index creation and removal — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Online index creation and removal — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html" aria-current="page">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / ONLINE INDEX CREATION AND REMOVAL</p><h1 id="online-index-creation-and-removal">Online index creation and removal</h1>
+<p>Standalone <code>CREATE INDEX</code>, <code>CREATE UNIQUE INDEX</code>, and single-action
+<code>ALTER TABLE ... ADD INDEX/KEY</code> statements build indexes while independent
+sessions continue reading and committing inserts, updates, and deletes.</p>
+<pre><code class="language-sql">CREATE INDEX customer_name ON customers(name);
+CREATE UNIQUE INDEX customer_external ON customers(tenant, external_id);
+ALTER TABLE customers ADD INDEX tenant_name(tenant, name);
+ALTER TABLE customers ADD UNIQUE KEY external_key(tenant, external_id);
+
+DROP INDEX customer_name;
+ALTER TABLE customers DROP INDEX tenant_name;
+</code></pre>
+<p>Use <code>EXPLAIN CREATE INDEX ...</code>, <code>EXPLAIN DROP INDEX ...</code>, or <code>EXPLAIN ALTER TABLE ...</code> to inspect the work and locking before executing the change.</p>
+<h2 id="creation-and-visibility">Creation and visibility</h2>
+<p>The build reserves a permanent storage ID and scans a pinned committed
+snapshot. Its entries remain invisible to query planning and constraint
+checks until publication. Committed row changes are recorded during the scan
+and replayed against subsequent snapshots. Rolled-back changes are excluded.
+After publication, ordinary writes maintain the new index atomically with rows.
+Prepared statements refresh their bindings when the catalog changes.</p>
+<p>The scan and catch-up use a shared catalog lock, which permits normal DML.
+Other schema changes wait during this work. Publication releases that shared
+lock before acquiring an exclusive catalog lock, allowing concurrent builders
+to finish without an upgrade deadlock. The table definition and collation are
+checked again after this transition. A conflicting schema change rejects the
+build instead of publishing stale entries.</p>
+<p>An exclusive publication lock waits for existing writer transactions to finish
+and briefly prevents new writers from acquiring the catalog lock. Final
+reconciliation is limited to 256 captured row mutations; a larger delta is
+caught up under a shared lock before retrying publication. The main table scan
+and bulk index installation happen before this exclusive phase. Long-running
+writer transactions can delay publication. Query cancellation and configured
+query/lock timeouts apply throughout execution. This describes the amount of
+work under the lock; storage I/O and the size of individual values still affect
+elapsed time.</p>
+<p>UNIQUE builds validate the final committed contents, with normal NULL,
+composite-key, Unicode collation, and column <code>BINARY</code> rules. A duplicate removed
+while building can allow publication; a duplicate committed during the build
+causes failure. A failed build never publishes a partially usable index.</p>
+<h2 id="publication-with-transaction-cancellation">Publication with transaction cancellation</h2>
+<p>Index changes wait for blocking transactions by default. A standalone index
+change can instead cancel those transactions once publication has waited for a
+specified duration:</p>
+<pre><code class="language-sql">CREATE INDEX customer_name ON customers(name)
+  KILL TRANSACTIONS AFTER &#39;250ms&#39;;
+DROP INDEX customer_name KILL TRANSACTIONS AFTER &#39;2s&#39;;
+ALTER TABLE customers ADD INDEX tenant_name(tenant, name)
+  KILL TRANSACTIONS AFTER &#39;250ms&#39;;
+ALTER TABLE customers DROP INDEX tenant_name
+  KILL TRANSACTIONS AFTER &#39;0s&#39;;
+</code></pre>
+<p>The threshold starts when the statement waits for the exclusive publication
+lock, after the index build and catch-up. For drops it starts when acquiring the
+exclusive catalog lock. <code>0s</code> requests immediate cancellation when there are
+blockers. Durations must be quoted, nonnegative Go durations such as <code>250ms</code>,
+<code>2s</code>, or <code>1m30s</code>. Malformed durations, negative values, and values beyond the
+duration range are rejected.</p>
+<p>Only explicit transactions holding a conflicting catalog lock are targeted.
+Autocommit statements finish normally; read-only transactions without catalog
+locks and unrelated queued waiters are not targeted. Active statements are
+cancelled cooperatively and uncommitted changes are rolled back before the
+lock is granted. A commit that has already published may finish successfully.
+Applications receive <code>db.ErrTransactionAborted</code> for an aborted transaction and
+must retry the entire transaction, including earlier statements. A Session
+remains usable afterward, while a dedicated Tx handle ends. Query cancellation
+and configured query/lock timeouts still apply; the threshold does not guarantee
+that publication will finish within that time.</p>
+<p>Cancellation before the threshold leaves blockers alone. Once a rollback is
+requested, it completes even if the publishing statement is subsequently
+cancelled. After the threshold expires, the policy also applies to older queued
+transactions that become blocking owners while publication is still waiting.</p>
+<p>The Go API also accepts an optional threshold in <code>db.ExecOptions</code>:</p>
+<pre><code class="language-go">abortAfter := 250 * time.Millisecond
+_, err := database.ExecWithOptions(
+    &quot;CREATE INDEX customer_name ON customers(name)&quot;,
+    db.ExecOptions{IndexPublicationAbortAfter: &amp;abortAfter})
+</code></pre>
+<p><code>nil</code> preserves ordinary waiting, and a pointer to zero requests immediate
+cancellation. A negative threshold is rejected. If the SQL statement includes
+the modifier, its threshold takes precedence over the per-call option. The
+policy applies only to standalone autocommit CREATE/DROP INDEX and single-action ALTER TABLE ADD/DROP
+INDEX. Explicit transactions, savepoints, multi-action ALTER, constraint
+additions, and ALTER INDEX REBUILD reject it. SQL <code>EXPLAIN</code> and CLI <code>.plan</code>
+show the chosen threshold without cancelling transactions or changing indexes.</p>
+<h2 id="memory-disk-and-recovery">Memory, disk, and recovery</h2>
+<p>Entry installation uses batches of at most 256 rows or approximately 1 MiB,
+with a single large row allowed to exceed that byte target. Temporary row
+mappings and UNIQUE counts use a private disk store governed by the query
+memory budget. Committed change logs are on disk and rotate after catch-up
+passes. Temporary stores use <code>QueryTempDir</code>, or the operating system temporary
+directory, outside the database directory. They are removed on normal success,
+failure, and cancellation.</p>
+<p>Invisible entries are staged in the database under the reserved index ID.
+Durable cleanup metadata is written before staging begins and removed in the
+same atomic batch that publishes the catalog entry. An interrupted build is
+reclaimed on reopen. Backup captures these markers with its snapshot, so
+opening a backup taken during a build also discards unpublished entries.
+Reserved IDs are never reused. A build needs disk space for its new entries,
+temporary mappings/counts, and changes committed while it runs.</p>
+<h2 id="dropping-an-index">Dropping an index</h2>
+<p>Dropping an index commits a catalog change and a durable cleanup marker without
+scanning rows or index entries. It needs an exclusive catalog lock to synchronize
+with active writers. Current query plans stop using the index after catalog
+publication. Readers with an older statement snapshot can finish using the
+old entries.</p>
+<p>Cleanup hides the obsolete prefix with a range tombstone. Compaction eventually
+reclaims the physical bytes; <code>VACUUM</code> can perform a full rewrite when space
+reclamation is needed. Recreating the same index name allocates a different
+storage ID. Constraint-backed indexes and indexes required as the only foreign
+key candidate remain protected from independent removal.</p>
+<p>Cleanup failures after catalog publication explicitly report that the schema
+change committed and index cleanup is pending. Reopening retries durable
+cleanup; later index cleanup operations can also reclaim pending prefixes.
+The committed catalog is authoritative when checking whether an index exists.</p>
+<p>Post-commit cleanup runs only for sessions that staged an index drop. Ordinary
+DML <code>COMMIT</code> and outermost <code>RELEASE</code> skip both the cleanup metadata scan and its
+exclusive catalog lock. Transactional drops are reclaimed after commit; a
+cleanup failure retains the session&#39;s request so a subsequent commit can retry.
+Rolling back a drop may cause one harmless empty cleanup on that session&#39;s next
+commit. Startup and online-build cleanup continue checking persisted markers.</p>
+<h2 id="transactions-and-multi-action-alter">Transactions and multi-action ALTER</h2>
+<p>Inside explicit transactions and savepoints, index creation retains the
+ordinary atomic DDL path: it takes an exclusive catalog lock, scans and stages
+entries in the transaction, and obeys commit/rollback. Multi-action ALTER
+statements use that path to preserve all-or-nothing behavior. Their index
+creation work can block writers for the duration of the transaction.</p>
+<p>Index drops use catalog-only removal and deferred range cleanup in both paths.
+Rollback removes the pending cleanup marker and preserves the index. Online
+creation applies to standalone index additions; constraint additions and
+<code>ALTER INDEX ... REBUILD</code> retain their existing validation and locking paths.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/online-indexes.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

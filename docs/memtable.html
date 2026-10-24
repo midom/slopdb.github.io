@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Memtable options — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Memtable options — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / MEMTABLE OPTIONS</p><h1 id="memtable-options">Memtable options</h1>
+<p>SlopDB uses a sorted skip list by default. Commit groups install rows serially.
+Large sorted batches reuse predecessors. Scans seek and read entries without
+copying and sorting the whole memtable.</p>
+<h2 id="parallel-installation">Parallel installation</h2>
+<p>To let callers in a commit group install their rows in parallel:</p>
+<pre><code class="language-go">opt := storage.DefaultOptions()
+opt.ParallelMemTableWrites = true
+</code></pre>
+<p>The CLI and write benchmark accept <code>--parallel-memtable-writes</code>. This option
+is off by default. It applies to the sorted memtable and is ignored when
+<code>HashMemTable</code> is enabled. The skip list uses atomic links in both modes.</p>
+<p>With parallel installation, the leader first orders WAL records and assigns
+each writer a sequence span. It waits for all rows before it publishes the
+group. Readers retain the old committed snapshot until publication. Rotation
+and close also wait for installation to finish. WAL and publication remain
+serial. One transaction still installs its own rows serially.</p>
+<p>Parallel installation improved the one-row random INSERT and UPDATE tests,
+but reduced median throughput by 8–21% in the 100-row INSERT tests. See
+<a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/write/2026-10-16/batch100-inserts.md">the 100-row results</a>. Select
+the option for workloads that benefit from it.</p>
+<h2 id="hash-memtables">Hash memtables</h2>
+<p>To select a hash memtable for an open database:</p>
+<pre><code class="language-go">opt := storage.DefaultOptions()
+opt.HashMemTable = true
+</code></pre>
+<p>The CLI and write benchmark accept <code>--hash-memtable</code>. The option is off by
+default. Hash memtables reduce the cost of point reads and writes. A scan or
+range estimate must first sort a copy of the entries. A frozen memtable can
+reuse that sorted copy; a write to a mutable memtable discards the cached copy.</p>
+<p>The selected mode applies to initial memtables, WAL recovery, and all new
+memtables after a flush. It does not change the WAL or SSTable format. Each
+open can select either mode for the same database files.</p>
+<h2 id="wal-disabled">WAL disabled</h2>
+<p>Set <code>opt.DisableWAL = true</code>, or pass <code>--no-wal</code> to the CLI or write benchmark,
+to disable WAL writes entirely. Completed flushes and a clean close save data
+to SSTables. A crash can lose unflushed changes. This differs from
+<code>DisableWALSync</code>, which still writes WAL records but skips WAL fsync.</p>
+<p>See <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/write/2026-10-16/optional-memtable-no-wal.md">the concurrent random UPDATE tests</a>
+for both memtable modes with WAL disabled.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/memtable.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

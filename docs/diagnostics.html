@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SQL and lock diagnostics — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>SQL and lock diagnostics — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html" aria-current="page">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SQL AND LOCK DIAGNOSTICS</p><h1 id="sql-and-lock-diagnostics">SQL and lock diagnostics</h1>
+<h2 id="sql-parse-errors">SQL parse errors</h2>
+<p><code>sql.Parse</code>, <code>sql.Prepare</code>, and database execution report a line and column for
+syntax errors. Messages name the expected punctuation or keyword, for example:</p>
+<pre><code class="language-text">line 1, column 10: expected &quot;)&quot;, got end of SQL
+</code></pre>
+<p>This is the result of parsing <code>SELECT (1</code>; add the missing closing parenthesis.
+Callers can use <code>errors.As(err, &amp;parseErr)</code> with <code>*sql.ParseError</code> to obtain its
+one-based <code>Line</code> and <code>Column</code> and zero-based <code>ByteOffset</code>. The location points
+at the current token, or at the end of the input when SQL ends early. Columns
+count Unicode code points, while the byte offset can be used to slice the
+original SQL string. Invalid numeric and BLOB literals point at the literal
+that failed conversion. A database call may wrap this error with additional
+context; <code>errors.As</code> still finds the location.</p>
+<h2 id="live-lock-waits">Live lock waits</h2>
+<p><code>Database.LockWaits()</code> returns a snapshot of sessions currently waiting for
+catalog, row, or unique-value locks. Each entry has a database-local session
+ID, IDs of blocking sessions, lock mode, resource kind, elapsed wait duration,
+and the resource. Row resources are hex-encoded physical keys. Unique lock
+resources contain framed table/column names and their predicate values appear
+in <code>Values</code>.</p>
+<p><code>Database.SessionID()</code> identifies the default session;
+<code>Session.SessionID()</code> and <code>Tx.SessionID()</code> identify independent handles. These
+methods do not wait for the session&#39;s current SQL operation. Nil or closed
+handles return zero. Results from <code>LockWaits()</code> own their slices and BLOB values,
+so callers can retain or modify the snapshot without changing lock state.</p>
+<pre><code class="language-go">waits := database.LockWaits()
+for _, wait := range waits {
+    fmt.Printf(&quot;session %d waits %s for %s; blockers: %v\n&quot;,
+        wait.SessionID, wait.WaitDuration, wait.ResourceKind,
+        wait.BlockingSessionIDs)
+}
+</code></pre>
+<p>In the CLI, <code>.locks</code> prints the same snapshot, including lock mode and unique
+predicate values. It reports <code>No active lock waits.</code> when nothing is waiting,
+and respects <code>.output</code> redirection. Dot commands require an interactive terminal
+or the <code>--allow-dot-commands</code> flag when reading redirected input.</p>
+<p>This method needs no SQL session, so it remains callable while another session
+is blocked on a catalog change. The snapshot is diagnostic: a blocker may commit
+as soon as the method returns. Session IDs are only meaningful within the
+current <code>Database</code> instance and are not persisted across reopen. A wait that
+times out or is cancelled disappears from subsequent snapshots.</p>
+<h2 id="lock-failures">Lock failures</h2>
+<p>Lock timeouts and detected deadlocks report the waiting session ID and resource.
+Use <code>errors.As(err, &amp;lockErr)</code> with <code>*db.LockError</code> to inspect <code>SessionID</code>,
+<code>ResourceKind</code>, and <code>Resource</code>. Its wrapped error preserves <code>errors.Is</code> checks
+for <code>db.ErrLockTimeout</code>, <code>db.ErrDeadlock</code>, and the timeout&#39;s
+<code>context.DeadlineExceeded</code>.</p>
+<p>A lock timeout cancels the statement and keeps earlier transaction work and
+locks. Inspect <code>LockWaits()</code> from another goroutine or handle while the wait is
+active, then let the owner finish, roll back the waiting transaction, or choose
+a longer timeout. The failed wait is removed before the error is returned.
+A detected deadlock rolls back its victim; retry the entire transaction using
+a new transaction handle. Taking shared resources in a consistent order helps
+avoid repeating a deadlock.</p>
+<p>Standalone index publication can opt into cancelling blocking transactions
+with <code>KILL TRANSACTIONS AFTER &#39;250ms&#39;</code>, or through
+<code>db.ExecOptions.IndexPublicationAbortAfter</code>. This cancels and rolls back the
+whole blocking explicit transaction, including its earlier statements. Its
+operations report <code>db.ErrTransactionAborted</code>; use <code>errors.Is</code> to identify it.
+Retry that work as a new transaction. Sessions remain usable after the abort,
+while dedicated Tx handles end. Autocommit statements and read-only
+transactions without conflicting catalog locks are not targeted. The default
+publication behavior continues waiting until
+blockers finish or the statement&#39;s timeout/cancellation takes effect. Use
+<code>EXPLAIN</code> or <code>.plan</code> to see an index change&#39;s cancellation policy before
+executing it; see <a href="online-indexes.html">online indexes</a> for details.</p>
+<h2 id="query-plans">Query plans</h2>
+<p>For slow SQL, <code>EXPLAIN ANALYZE</code> includes actual reads, plan work, timings,
+allocation, spill metrics, and time spent waiting for locks as <code>lock_wait_ms</code>.
+Use <code>EXPLAIN</code> to inspect a plan without running the statement.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/diagnostics.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

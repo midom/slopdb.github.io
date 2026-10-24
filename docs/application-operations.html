@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Query iteration, bulk loading, backup and integrity — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Query iteration, bulk loading, backup and integrity — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html" aria-current="page">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / QUERY ITERATION, BULK LOADING, BACKUP AND INTEGRITY</p><h1 id="query-iteration-bulk-loading-backup-and-integrity">Query iteration, bulk loading, backup and integrity</h1>
+<p><code>Database.Query</code>, <code>Session.Query</code>, <code>Tx.Query</code> and <code>Stmt.Query</code> return <code>*db.Rows</code>.
+Each has a <code>QueryContext</code> variant. A database query owns an independent session;
+a session or transaction query sees its own private writes and serializes other
+calls on that session until the result closes.</p>
+<pre><code class="language-go">rows, err := database.QueryContext(ctx,
+    &quot;SELECT id, name FROM customers WHERE id BETWEEN 10 AND 20 ORDER BY id&quot;)
+if err != nil { return err }
+defer rows.Close()
+for rows.Next() {
+    var id int64
+    var name string
+    if err := rows.Scan(&amp;id, &amp;name); err != nil { return err }
+    fmt.Println(id, name)
+}
+return rows.Err()
+</code></pre>
+<p>Simple single-table filtering/projection queries stream from a pinned statement
+snapshot. Clustered primary-key order in either direction, LIMIT/OFFSET,
+primary-key equality and a single composite key interval are supported without
+materializing all matches. Cursor memory does not grow with the result count.
+Joins, grouping, arbitrary sorting, DISTINCT, views, subqueries and other blocking
+operators use the ordinary executor. <code>Rows.Materialized()</code> makes that fallback
+visible to callers. The row order matches the query; SQL without ORDER BY does
+not promise a particular order.</p>
+<p>Always close results when stopping early. Exhaustion, context cancellation and
+database/session shutdown automatically release the iterator, snapshot and
+session gate, including when the consumer never calls Next again. Do not keep
+an idle result open indefinitely: it pins old MVCC versions. Next/Scan are meant
+for one consumer; Close may run concurrently. Scan errors leave the current row
+available for another Scan.</p>
+<p><code>Rows.Columns()</code> returns copied column definitions with constraint SQL text;
+internal executable DEFAULT/CHECK ASTs are omitted. <code>Rows.Values()</code> returns
+caller-owned SQL values in projection order. Scan accepts <code>*sql.Value</code>, <code>*int64</code>,
+<code>*int</code>, <code>*float64</code>, <code>*string</code>, <code>*[]byte</code>, <code>*bool</code>, <code>*any</code>, and <code>database/sql.Scanner</code>
+implementations such as <code>database/sql.NullInt64</code>. NULL fails for non-nullable
+scalar destinations. Typed scanning rejects incompatible types, overflowing
+native integers and integer-to-float conversions outside the exact integer
+range of float64. Scanned BLOB buffers remain valid after Next and Close; changing
+them cannot mutate the database. Prepared query bindings remain private until
+their result closes, so concurrent executions do not reuse a live cursor&#39;s AST.</p>
+<h2 id="atomic-bulk-insertion">Atomic bulk insertion</h2>
+<p><code>Database.BulkInsert(ctx, table, columns, source)</code> consumes a <code>db.BulkSource</code>
+callback returning <code>[]any</code> bindings and <code>io.EOF</code>. It prepares INSERT shapes in
+batches of 256 rows and commits the entire import in one transaction. Ordinary
+SQL affinity, defaults, primary/unique keys, checks, foreign keys, triggers and
+index maintenance apply. Source errors, malformed rows, constraint failures and
+cancellation roll back all inserted rows and return a count of zero.</p>
+<pre><code class="language-go">next := func(ctx context.Context) ([]any, error) {
+    record, err := csvReader.Read()
+    if err != nil { return nil, err }
+    return []any{record[0], record[1]}, nil
+}
+count, err := database.BulkInsert(ctx, &quot;customers&quot;, []string{&quot;id&quot;, &quot;name&quot;}, next)
+</code></pre>
+<p>Sources execute synchronously and should honor the supplied context when their
+own I/O may block. Row buffers and BLOB bindings may be reused on the next source
+call. The transaction retains pending writes and locks until commit; invoke the
+API in separate chunks if bounded transaction memory matters more than all-or-
+nothing import semantics. The CLI <code>.import FILE TABLE</code> now uses this API: invalid
+CSV or SQL data leaves no partially inserted rows. Automatic table creation for
+an absent table still precedes import, so a failed import may leave an empty table.</p>
+<h2 id="consistent-online-backup">Consistent online backup</h2>
+<p><code>Database.BackupContext(ctx, destination)</code> (or <code>Backup</code>) copies committed raw
+key/value state at one pinned MVCC snapshot, including catalog, rows and indexes.
+Other sessions continue executing while it copies. Private transaction writes
+are excluded. This creates a durable, reopenable database, even when the source
+has WAL or WAL fsync disabled. It does not copy changing WAL files or require a
+source checkpoint. The copy is written in bounded batches to a temporary sibling
+directory, flushed and synced, then published with a directory rename and parent
+sync. Close and cancellation clean up incomplete staged copies.</p>
+<p>The destination must not exist and must lie outside the source database directory.
+Its parent directory must exist. Existing databases are never overwritten. Restore
+by calling <code>db.Open(destination, options)</code>; no import/replay procedure is required.
+The backup preserves logical state, not SSTable layout, historical MVCC versions,
+original sequence numbers or WAL history. Long backups retain old versions and
+use additional disk space. An error syncing the parent after publication can
+leave a complete backup at the destination; inspect that path before retrying.</p>
+<p>CLI: <code>.backup DIRECTORY</code>.</p>
+<h2 id="read-only-integrity-checking">Read-only integrity checking</h2>
+<p><code>Database.CheckIntegrityContext(ctx)</code> (or <code>CheckIntegrity</code>) reports checked rows,
+secondary entries, catalog objects, SSTables and physical entries. It validates
+one SQL snapshot for row encoding/types, primary keys, CHECK/NOT NULL/UNIQUE
+constraints, foreign-key references, clustered-key agreement and missing, stale
+or extra index entries. Persisted catalog objects must agree with the committed
+catalog. It also opens current immutable SSTables with the block cache disabled
+to verify metadata/index/data checksums, internal key ordering, sizes, manifest
+agreement and bloom-filter false negatives, including obsolete row versions.</p>
+<p>The checker never repairs or rewrites data. Diagnostics name the table, row,
+index or SSTable concerned, and cancellation releases all readers. It may use
+memory proportional to the number of distinct UNIQUE values, and is intended
+for explicit operational checks. Unflushed data is checked logically; live WAL
+history is not reread. A nullable column omitted from a legacy row after ALTER
+ADD COLUMN is interpreted as NULL, matching normal execution.</p>
+<p>CLI: <code>.integrity</code>, which prints <code>ok</code> and verification counts or an error.
+<code>.bail on</code> exits with a failure status when either backup or integrity fails.
+Dot commands are available in interactive terminal sessions. Scripts redirected
+into the CLI must opt in with <code>--allow-dot-commands</code>; otherwise encountering a dot
+command reports an error and exits with status 1. The setting applies to all dot
+commands, including shell execution, file access and exit commands.</p>
+<h2 id="quick-storage-status">Quick storage status</h2>
+<p>CLI <code>.status</code> prints the current database path, effective WAL and fsync mode,
+persisted SSTable page target, default query and lock timeouts, deadlock detection,
+compression for future L0 and L1-L6 blocks, active and immutable memtable bytes, and the
+number and total size of SSTables at each occupied level. It takes a cheap
+snapshot of live counters and file metadata, so it is useful during normal
+operation. For example, it distinguishes a database running without WAL from
+one writing WAL without fsync; both settings affect crash durability.</p>
+<p><code>.status</code> does not scan data or verify checksums. Use <code>.integrity</code> for that
+explicit check. For per-file bounds, cache counters and compaction counters,
+use <code>.manifest</code>. A large L0 file count can indicate that flushes are arriving
+faster than background compaction; compare several status snapshots before
+drawing a conclusion from one moment.</p>
+<p>Compression describes future writes; existing SSTables can contain different
+codecs. Timeouts and deadlock detection describe this CLI instance. They are
+selected at open and are not persistent database settings. Use <code>PRAGMA collation</code>
+to read the persisted database-wide text mode.</p>
+<h2 id="explaining-a-slow-query">Explaining a slow query</h2>
+<p>CLI <code>.explain SELECT ...</code> shows access, filters, join order, sorting and LIMIT,
+with short explanations of their effect. It accepts exactly one SELECT-family
+statement and produces an estimated plan without evaluating the SELECT.</p>
+<pre><code class="language-text">.explain SELECT id, name FROM customers WHERE id=42
+.explain SELECT id, name FROM customers ORDER BY name LIMIT 20
+</code></pre>
+<p><code>PointLookup</code> means a direct primary-key read. <code>SeekGE</code> / <code>SeekLT</code> seek to a
+starting key in forward / reverse order; the plan details describe any bounds.
+<code>MultiGet</code> batches point reads. <code>OpenIndex</code>
+identifies an index. <code>Rewind</code> indicates scan access, and <code>SorterSort</code> indicates
+a separate sort. A scan can be appropriate when most rows are needed. For a
+selective predicate, check whether an index starts with the filtering columns;
+for sorting, check whether its key order matches ORDER BY. Residual filters
+still validate rows obtained through an index.</p>
+<p>Run <code>EXPLAIN ANALYZE SELECT ...;</code> explicitly when you need actual row reads,
+join/probe counts, execution times, allocation or spill evidence. It executes
+the query and a <code>FOR UPDATE</code> / <code>FOR SHARE</code> clause can acquire locks. Compare
+actual work with the estimated plan and representative parameter values before
+changing an index. A large LIMIT/OFFSET, a broad join or a sort over many rows
+can account for work even when an index is present. After substantial data
+changes, <code>ANALYZE;</code> refreshes the persisted statistics used for access and join
+choices; ordinary writes do not refresh them automatically.</p>
+<p>For lock contention, <code>.locks</code> prints waiting sessions and blocking session IDs.
+Use independent sessions to investigate active transactions; calls on the same
+session serialize. See <a href="diagnostics.html">SQL and lock diagnostics</a> for the Go API
+and lock timing, and <a href="sql-surprises.html">SQL surprises</a> when the issue is the
+answer rather than execution cost.</p>
+<h2 id="backup-restore-and-upgrades">Backup, restore and upgrades</h2>
+<p>Create <code>.backup DIRECTORY</code> into a new directory before an upgrade or a schema
+change whose recovery cost matters. Reopen that directory and run <code>.integrity</code>
+to validate the copy. Restoring means opening the backup directory with the
+desired runtime options; it needs no SQL import. Keep the original directory
+until the restored data has been checked. WAL settings at runtime are visible
+through <code>.status</code>.</p>
+<p>Use <code>.plan</code> or SQL <code>EXPLAIN</code> on a supported schema change before executing it
+to inspect expected scans, rewrites and locking. See
+<a href="schema-change-planning.html">schema change planning</a> for limitations and online
+index operations. These commands report work; they do not validate every
+existing row or guarantee that the later operation will succeed.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/application-operations.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

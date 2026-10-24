@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Further small-row SELECT improvements — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Further small-row SELECT improvements — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / FURTHER SMALL-ROW SELECT IMPROVEMENTS</p><h1 id="further-small-row-select-improvements">Further small-row SELECT improvements</h1>
+<p>This follows the <a href="small-row-select-scaling.html">scaling changes</a> and <a href="small-row-select-gogc-200.html">GOGC=200-only measurements</a>. The baseline is their frozen optimized binary, rather than the original Git HEAD. All comparisons retain the existing prepared SQL API and independently owned result maps, column slices and BLOBs.</p>
+<p>The fixture remains the same 39,062,500 rows / 10,000,000,000 logical bytes on <code>test</code>. All 1,226 L6 SSTables match the original seed by SHA256. No loading, VACUUM, writes or persistent-format migration occur during these measurements.</p>
+<h2 id="results">Results</h2>
+<p>Median checked SELECTs/s: 100 independent sessions and a fresh process for each cache size. The final GOGC=200 matrix uses three consecutive 30-second samples. Final default-GC CLOCK/LRU rechecks use three 15-second samples; complete three-30-second matrices from the candidate before the final context-allocation fix are retained separately in the saved summary. Differences in sample duration limit the default-GC comparison. Decimal cache budgets, 4 KiB physical pages, uniformly random prepared full-row primary-key reads, unchanged deterministic seed and page-spaced warmup.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Cache</th>
+<th align="right">Default-GC CLOCK before</th>
+<th align="right">After</th>
+<th align="right">Gain</th>
+<th align="right">Default-GC LRU after</th>
+<th align="right">GOGC=200 CLOCK before</th>
+<th align="right">After</th>
+<th align="right">Gain</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100 MB</td>
+<td align="right">1,290,306</td>
+<td align="right">1,952,413</td>
+<td align="right">+51.3%</td>
+<td align="right">1,957,211</td>
+<td align="right">1,514,581</td>
+<td align="right">2,166,803</td>
+<td align="right">+43.1%</td>
+</tr>
+<tr>
+<td>1 GB</td>
+<td align="right">1,494,712</td>
+<td align="right">1,856,402</td>
+<td align="right">+24.2%</td>
+<td align="right">1,848,762</td>
+<td align="right">1,721,687</td>
+<td align="right">2,354,411</td>
+<td align="right">+36.8%</td>
+</tr>
+<tr>
+<td>10 GB</td>
+<td align="right">2,527,890</td>
+<td align="right">3,421,919</td>
+<td align="right">+35.4%</td>
+<td align="right">3,208,616</td>
+<td align="right">3,472,815</td>
+<td align="right">4,342,559</td>
+<td align="right">+25.0%</td>
+</tr>
+<tr>
+<td>20 GB</td>
+<td align="right">2,262,230</td>
+<td align="right">3,115,958</td>
+<td align="right">+37.7%</td>
+<td align="right">3,107,382</td>
+<td align="right">2,918,204</td>
+<td align="right">3,753,984</td>
+<td align="right">+28.6%</td>
+</tr>
+</tbody></table>
+</div><p><code>GOGC=200</code> is set alone; <code>GOMEMLIMIT</code> and <code>GOMAXPROCS</code> are unset. Default-runtime measurements unset all three. The runtime uses 60 execution slots on the 60-core ARM Neoverse-N1 host with approximately 58 GiB RAM. These are sequential descriptive measurements on one fixture, rather than independent replications establishing statistical significance.</p>
+<p>CLOCK CPU, tail latency and resident memory:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Cache</th>
+<th align="right">Default CPU cores</th>
+<th align="right">GOGC=200 CPU cores</th>
+<th align="right">Default p99 µs</th>
+<th align="right">GOGC=200 p99 µs</th>
+<th align="right">Default peak RSS GB</th>
+<th align="right">GOGC=200 peak RSS GB</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100 MB</td>
+<td align="right">45.1</td>
+<td align="right">47.4</td>
+<td align="right">819.2</td>
+<td align="right">786.4</td>
+<td align="right">0.88</td>
+<td align="right">1.36</td>
+</tr>
+<tr>
+<td>1 GB</td>
+<td align="right">45.8</td>
+<td align="right">50.5</td>
+<td align="right">983.0</td>
+<td align="right">753.7</td>
+<td align="right">3.71</td>
+<td align="right">5.25</td>
+</tr>
+<tr>
+<td>10 GB</td>
+<td align="right">46.6</td>
+<td align="right">53.9</td>
+<td align="right">188.4</td>
+<td align="right">81.9</td>
+<td align="right">29.29</td>
+<td align="right">44.31</td>
+</tr>
+<tr>
+<td>20 GB</td>
+<td align="right">37.1</td>
+<td align="right">42.2</td>
+<td align="right">86.0</td>
+<td align="right">77.8</td>
+<td align="right">30.48</td>
+<td align="right">46.32</td>
+</tr>
+</tbody></table>
+</div><p>CPU measurements include result validation and Go GC. Percentiles are histogram upper bounds. Peak RSS includes startup, warmup and close. The Linux filesystem cache remains enabled and is never reset; this measures engine-cache, decoding and CPU costs rather than cold-device random I/O.</p>
+<p>The default-GC, fully fitting 20 GB CLOCK scaling sweep uses two 15-second samples per fresh process, matching the previous sweep:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Readers</th>
+<th align="right">Before SELECTs/s</th>
+<th align="right">After SELECTs/s</th>
+<th align="right">Gain</th>
+<th align="right">Before CPU cores</th>
+<th align="right">After CPU cores</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td align="right">103,767</td>
+<td align="right">124,286</td>
+<td align="right">+19.8%</td>
+<td align="right">1.1</td>
+<td align="right">1.1</td>
+</tr>
+<tr>
+<td>8</td>
+<td align="right">755,058</td>
+<td align="right">909,484</td>
+<td align="right">+20.5%</td>
+<td align="right">8.6</td>
+<td align="right">8.3</td>
+</tr>
+<tr>
+<td>16</td>
+<td align="right">1,480,202</td>
+<td align="right">1,754,424</td>
+<td align="right">+18.5%</td>
+<td align="right">17.1</td>
+<td align="right">16.9</td>
+</tr>
+<tr>
+<td>32</td>
+<td align="right">2,150,348</td>
+<td align="right">2,788,611</td>
+<td align="right">+29.7%</td>
+<td align="right">27.6</td>
+<td align="right">29.0</td>
+</tr>
+<tr>
+<td>60</td>
+<td align="right">2,256,217</td>
+<td align="right">2,976,347</td>
+<td align="right">+31.9%</td>
+<td align="right">33.8</td>
+<td align="right">34.8</td>
+</tr>
+<tr>
+<td>100</td>
+<td align="right">2,299,330</td>
+<td align="right">3,107,880</td>
+<td align="right">+35.2%</td>
+<td align="right">34.3</td>
+<td align="right">36.9</td>
+</tr>
+</tbody></table>
+</div><h2 id="changes">Changes</h2>
+<ol>
+<li><p><strong>Predecode immutable SSTable indexes.</strong> Build pointer-free key and block-handle arrays once per reader, avoiding repeated prefix reconstruction and handle-varint decoding on every point read. Compare the common file key prefix once, then search precomputed leading bytes. Equal fingerprints always fall back to full key comparison, preserving ordering for embedded NULs, short keys and duplicate separators. Older versions spanning multiple pages still traverse subsequent handles. Index checksums and malformed-handle/order checks remain active. Iterators retain the existing representation and persistent format.</p>
+</li>
+<li><p><strong>Cheaper block header decoding.</strong> Decode the common one-byte prefix lengths and one/two-byte value length together, falling back to the full checked varint decoder for larger values. Skip a redundant restart-key search when the block has only one restart. Truncation, length overflow and shared-prefix checks remain active.</p>
+</li>
+<li><p><strong>Bounded private lookup buffers.</strong> Prepared plans reuse their primary-key encoding and raw row-value buffers. Storage copies into caller-supplied private scratch through <code>GetAtForReaderInto</code>; SQL still constructs independent result maps and copies returned BLOBs/TEXT. Transactions retain their overlay path. Scratch over 64 KiB is discarded when the binding is released. Catalog changes invalidate plans and their scratch normally.</p>
+</li>
+<li><p><strong>Avoid queued cache admissions.</strong> A decoded page can already satisfy its read. If its shard is busy, skip cache admission instead of queuing a writer that blocks subsequent readers. Approximate LRU refreshes also skip contention. CLOCK reference bits retain the reader-lock path, so eviction sweeps stay bounded. <code>BlockCacheAdmissionSkips</code> exposes the bypass count; byte budgets remain exact and partitioned across 128 shards.</p>
+</li>
+<li><p><strong>Compact cache records.</strong> Replace a separate generic list node and cache record with typed intrusive links; avoid storing a duplicate page-data slice. This removes one heap object per resident page and reduces metadata scanning. Reusing an eviction record never modifies a retained immutable BlockReader. Both LRU and CLOCK use the same structure.</p>
+</li>
+<li><p><strong>Distribute catalog/snapshot reader registration.</strong> Replace the remaining global committed-catalog RWMutex reader counter with 128 padded reader counters selected by stable session snapshot IDs. Writers publish intent, exclude every distributed and legacy reader, and retain preference over new readers. This protects the same committed catalog, row-ID reservations and snapshot boundary.</p>
+</li>
+<li><p><strong>Avoid allocation in common cancellation checks.</strong> Uncontended session gates and SQL interruption checks use context errors without calling <code>Done()</code>. Contended calls retain the cancellable select path. Immutable default memory-budget contexts are shared for Background/TODO roots, while each call retains independent cancellation. Explicit zero overrides, nonzero budgets, caller values/deadlines, shutdown and transaction-abort registration preserve their behavior.</p>
+</li>
+<li><p><strong>Remove a discarded result allocation.</strong> Allocate an empty ExecResult only when the statement list produces no result, rather than allocate one before every SELECT and immediately replace it. Empty input still returns a non-nil result.</p>
+</li>
+</ol>
+<p>These changes are measured together; the matrix does not isolate individual speedups.</p>
+<h2 id="memory-and-remaining-costs">Memory and remaining costs</h2>
+<p>The predecoded index adds approximately 153.7 MB of resident array capacity for this fixture, reported as <code>PointIndexBytes</code> for the current file view. This is additional SSTable-reader metadata outside the decoded-page byte budget; older pinned views can temporarily retain more. The RSS table includes that cost. The compact cache records save separate list-node objects, but additional index metadata remains a real memory tradeoff, particularly with a small page cache.</p>
+<p>At the fully fitting cache, timed allocation is approximately 2,032 bytes/query and 15.0 allocations/query with GOGC=200. Owned result maps and the public ColumnDef slices still impose a material allocation floor. GC work, memory access and synchronization remain in the retained profiles; improved throughput does not establish linear scaling to all 60 cores.</p>
+<p>At the fully fitting cache, measured Go allocation volume is approximately 7.61 GB/s before and 7.63 GB/s after, despite the higher query rate. Together with the retained allocation/runtime profiles, this is consistent with allocation throughput remaining a limit; it is not a measurement of physical memory bandwidth. The final context changes remove a further 160 bytes and two allocations per query relative to the preceding candidate.</p>
+<p>The saved <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/select-fix-all/2026-10-15/profile-runtime-final-20000000000-cpu.txt">CPU</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/select-fix-all/2026-10-15/profile-runtime-final-20000000000-alloc.txt">allocation</a> and <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/select-fix-all/2026-10-15/profile-runtime-final-20000000000-block.txt">blocking</a> reports retain the remaining costs. Heap allocation profiles include startup and warmup; timed bytes/query comes from sample counters. Diagnostic throughput is excluded from the result tables.</p>
+<p>Skipped admission can affect hit rates for workloads with different locality. The complete samples retain hit rates, bypass fractions, cache occupancy, GC counts, latency, allocations and CPU cost so that throughput changes can be assessed alongside these effects. The engine does not change application-global GC settings.</p>
+<h2 id="experiments-and-validation">Experiments and validation</h2>
+<p>A lock-free immutable-bucket cache prototype was rejected. In matched short GOGC=200 pilots it added admission allocations and metadata: throughput fell from about 1.93M to 1.86M SELECTs/s at 100 MB, from 3.56M to 3.35M at 10 GB and from 3.42M to 3.30M at 20 GB. Adding admission bypass to that prototype was worse at 100 MB. The retained implementation uses Go maps, shared read locks, compact reusable records and best-effort writer admission. Pilot timings are diagnostic and excluded from the result tables.</p>
+<p>Catalog write controls compare the compact-cache pilot immediately before the catalog gate replacement against the candidate immediately after the gate replacement and before the final context-allocation fix, using existing BenchmarkCatalogWorkloads cases with one/128 tables, 16/60 execution slots and three 300 ms samples. Every benchmark validates exact committed updates and integrity. Point-update median times differ by about 0.5–3.3%; explicit transaction-update throughput increases by about 3.4–43.1%. These short controls are not a statistical proof of write performance across workloads.</p>
+<p>Permanent tests cover varint boundaries and deterministic malformed headers, long-key/value forward/reverse seeks, NUL-containing/truncated/equal index fingerprints, duplicate index separators with snapshots across pages, malformed handles and order, caller-buffer ownership and missing/closed reads, non-blocking admission, cancellation during contended session waits, and colliding/legacy catalog readers with writer preference. Existing tests retain prepared result ownership, transaction overlays, schema invalidation, concurrent writes/compaction, shutdown and crash recovery. Database artifacts use <code>t.TempDir()</code>.</p>
+<p>Required validation passed with local Go 1.22.2: root build, complete ordinary tests, complete race tests, go vet and git diff --check. Benchmark binaries use Go 1.26.0, matching the previous benchmark compiler and CGO build setting. The saved summary records production-source fingerprints and binary/report hashes. A separate 30-second malformed-header fuzz run passed 1,315,146 executions.</p>
+<h2 id="artifacts-and-reproduction">Artifacts and reproduction</h2>
+<p>Complete compact samples, comparisons, commands and integrity evidence: <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/select-fix-all/2026-10-15/summary.json">summary.json</a>. Raw reports, profiles, resources and the final source archive are on <code>test</code> under <code>~/slopdb-bench/select-fix-all-20261015/</code>, including <code>report.md</code>. Existing home-directory reports and source snapshots remain available.</p>
+<pre><code class="language-bash">env -u GOMEMLIMIT -u GOMAXPROCS GOGC=200 python3 \
+  ~/slopdb-bench/select-fix-all-20261015/select_cache_matrix.py \
+  --binary ~/slopdb-bench/select-fix-all-20261015/select-runtime-final \
+  --dir ~/slopdb-small-row-10gb --policy clock \
+  --output ~/slopdb-bench/select-fix-all-20261015/reproduce-clock-gogc200
+</code></pre>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/small-row-select-final-optimizations.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Persistent SSTable page-size targets — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Persistent SSTable page-size targets — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html" aria-current="page">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / PERSISTENT SSTABLE PAGE-SIZE TARGETS</p><h1 id="persistent-sstable-page-size-targets">Persistent SSTable page-size targets</h1>
+<p>SlopDB&#39;s page size is the target size in bytes of an <strong>uncompressed SSTable data
+block</strong>. It is not a fixed-size disk page, a file-allocation unit or the WAL block
+size. Compression can make a block much smaller on disk. Whole records are never
+split: a large row can exceed the target, and restart/checksum trailers add a
+small amount of overhead. Indexes, bloom filters, metadata and the file footer
+have their own sizes. The WAL retains its 32 KiB framing regardless of page size.</p>
+<p>Select 16 KiB, 64 KiB or 1 MiB at database creation:</p>
+<pre><code class="language-go">options := storage.DefaultOptions()
+options.PageSize = 1 &lt;&lt; 20 // int64, bytes
+options.DisableWALSync = true
+openDB, err := db.Open(directory, options)
+</code></pre>
+<pre><code class="language-sh">./slopdb --page-size=16384 database
+./slopdb --page-size=65536 database
+./slopdb --page-size=1048576 database
+</code></pre>
+<p>Explicit <code>PageSize</code>, CLI and SQL assignments accept powers of two from 512 bytes
+to 64 MiB. Input validation uses int64 before conversion to allocation sizes;
+negative, zero, nonintegral, non-power-of-two and oversized assignments fail.
+<code>Options.PageSize=0</code> and <code>--page-size=0</code> mean <strong>reuse the stored setting</strong>, defaulting
+to 4 KiB for a database without persisted configuration. The deprecated native
+<code>Options.BlockSize</code> remains available for existing code, including tiny/non-power-
+of-two test targets. A nondefault positive <code>BlockSize</code> overrides the stored target
+when <code>PageSize=0</code>; default 4096 defers to persisted configuration. Explicit
+<code>PageSize</code> always takes precedence. Legacy targets must be between 1 byte and
+64 MiB and are persisted, even when outside the explicit PageSize range.</p>
+<p>Inspect or change the target on an open database:</p>
+<pre><code class="language-sql">PRAGMA page_size;
+PRAGMA page_size = 65536;
+PRAGMA page_size(1048576);
+VACUUM;
+</code></pre>
+<p><code>Database.PageSize()</code> and <code>LSMTree.PageSize()</code> return int64 effective sizes.
+<code>Database.SetPageSize[Context](size)</code> and <code>LSMTree.SetPageSize(size)</code> set the target;
+<code>Database.Stats().PageSize</code> reports it too. All SQL sessions read the current
+storage setting, rather than a cached cosmetic value. Assignments return no rows.
+Changing page size is physical configuration, so SQL assignments reject an
+explicit transaction or savepoint. The Database setter uses the default session
+and follows that rule. An independent session can change the configuration while
+other sessions use transactions.</p>
+<p>Settings persist in a 24-byte <code>OPTIONS</code> file: eight-byte <code>SLOPPAGE</code> magic, uint32
+version 1, uint64 size and CRC32, all integer fields little-endian. It is written
+to a temporary sibling, synced, renamed and followed by directory sync. Opens
+validate and load it <strong>before WAL replay/checkpoint writers</strong>; malformed
+configuration produces an error and preserves recovery evidence. A legacy
+database without OPTIONS opens normally and gains persisted configuration.
+SSTable encoding and MANIFEST formats do not change, so existing files remain
+readable. Online backup carries the current setting into its fresh destination;
+integrity checking validates the configuration file too.</p>
+<p>A change affects writers started after the setter completes. Existing files,
+readers, snapshots and already-started writers retain their layout. New flushes
+and compactions can coexist with old blocks safely because readers use encoded
+block handles, not the configured target. <code>VACUUM</code> flushes committed data and
+rewrites it through full compaction, including bottom-level files which would
+otherwise remain untouched; pinned MVCC snapshots retain their required older
+versions. Reopening with an explicit option/CLI flag changes and persists the
+future target without an automatic rewrite. CLI <code>.open</code> carries an explicit CLI
+selection to the next database; absent that selection, it honors the destination&#39;s
+stored size. Full compaction performs one merge of all SSTables directly into L6, including
+existing L6 files. Writes, flushes and page-size changes wait until that rewrite
+finishes; existing readers keep their pinned snapshots.</p>
+<p>Larger blocks reduce block/index overhead and can improve compression and
+sequential reads, while point reads may decompress more unrelated rows. Writer
+buffers and cached decoded blocks also become larger. Compare identical data,
+compression, cache budgets and durability, and measure both point and scan work;
+a 1 MiB target does not imply a 1 MiB minimum allocation for every stored row.</p>
+<p>Zstd writers explicitly match their maximum back-reference window to the
+configured uncompressed block target, using normal-memory matching, the default
+compression level and one encoder worker. A 16 KiB, 64 KiB or 1 MiB target uses
+that same Zstd window. The codec minimum is 1 KiB, so a 512-byte target uses a
+1 KiB window. Legacy non-power-of-two <code>BlockSize</code> values round up to the next
+power of two. <code>storage.SSTableZstdWindowSizeForBlock</code> reports this setting.</p>
+<p>Each SSTable block is an independent frame: history can span Zstd&#39;s internal
+128 KiB codec blocks within a page but resets between SSTable pages. Frames
+smaller than the configured target may advertise a smaller effective window;
+rows larger than the target remain readable but cannot extend compression
+history beyond the configured window. Existing files using the previous 8 MiB
+setting remain readable. Auto compression leaves L0 files uncompressed and uses
+Zstd in L1-L6. Gzip and LZ4 keep their format-specific shorter history limits.</p>
+<p>Permanent tests check the actual frame headers for 4 KiB, 16 KiB, 64 KiB, 1 MiB
+and 2 MiB targets, including oversized rows, the codec minimum and legacy odd
+targets. A 1 MiB distant-repeat fixture checks back-references across internal
+codec blocks against a 64 KiB encoder, round-trip decoding and CRC failures.
+Legacy 64 KiB and 8 MiB-window frames remain readable. These are correctness
+checks, not throughput benchmarks. See the pinned codec&#39;s
+<a href="https://github.com/klauspost/compress/blob/v1.18.0/zstd/encoder_options.go">window options</a>
+and <a href="https://github.com/klauspost/compress/blob/v1.18.0/zstd/encoder.go">independent-frame encoding</a>.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/page-sizes.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

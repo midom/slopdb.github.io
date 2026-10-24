@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Catalog performance and concurrent renames — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Catalog performance and concurrent renames — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html" aria-current="page">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / CATALOG PERFORMANCE AND CONCURRENT RENAMES</p><h1 id="catalog-performance-and-concurrent-renames">Catalog performance and concurrent renames</h1>
+<p>Measurements on 2026-10-12 compare the committed name-prefixed catalog at
+<code>30e6b39</code>, the object-ID catalog before tuning, and the tuned implementation.
+Production-source SHA256 fingerprints and complete samples are in
+<a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/catalog/2026-10-12/sources.json">the saved reports</a>.</p>
+<p>The catalog-ID change alone did not show a material regression. Three-sample
+microbenchmark medians for prepared point reads, secondary reads, indexed ranges,
+scans, joins and updates were generally within a few percent of the old catalog.
+Both 1-table and 128-table catalogs were tested, with one and four workers.
+Short microbenchmarks vary between runs; small differences are not evidence of
+statistical significance.</p>
+<h2 id="pure-point-select">Pure point SELECT</h2>
+<p>The query is <code>SELECT v FROM point_000 WHERE id=?</code>, repeatedly binding the integer
+primary key 1. Every returned row must equal the seeded value 17. Timed execution
+contains only SELECTs: no writes, loading, transaction commits, SQL parsing or
+explicit BEGIN/COMMIT. Each worker uses an independent session and shares a
+prepared statement safely. Sessions and an initial execution are created before
+measurement. Fresh databases, preparation and close are outside the timing.</p>
+<p>This deliberately uses a warm memtable and one repeated key, making storage work
+small and exposing the relative cost of catalog, snapshot and lifecycle
+synchronization. These measurements do not predict cold disk I/O performance.
+Go 1.22.2, Linux ARM64, four available CPUs, <code>GOMAXPROCS=4</code>, default 4 KiB pages;
+three separate one-second samples per configuration, medians below.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Catalog tables</th>
+<th align="right">Workers</th>
+<th align="right">Old catalog SELECT/s</th>
+<th align="right">ID catalog before tuning</th>
+<th align="right">After tuning</th>
+<th align="right">Gain over ID catalog</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td align="right">1</td>
+<td align="right">120,656</td>
+<td align="right">119,460</td>
+<td align="right">171,292</td>
+<td align="right">1.43x</td>
+</tr>
+<tr>
+<td>1</td>
+<td align="right">10</td>
+<td align="right">255,493</td>
+<td align="right">252,270</td>
+<td align="right">319,591</td>
+<td align="right">1.27x</td>
+</tr>
+<tr>
+<td>1</td>
+<td align="right">32</td>
+<td align="right">241,955</td>
+<td align="right">239,349</td>
+<td align="right">310,078</td>
+<td align="right">1.30x</td>
+</tr>
+<tr>
+<td>128</td>
+<td align="right">1</td>
+<td align="right">110,509</td>
+<td align="right">116,469</td>
+<td align="right">167,616</td>
+<td align="right">1.44x</td>
+</tr>
+<tr>
+<td>128</td>
+<td align="right">10</td>
+<td align="right">247,647</td>
+<td align="right">279,642</td>
+<td align="right">351,370</td>
+<td align="right">1.26x</td>
+</tr>
+<tr>
+<td>128</td>
+<td align="right">32</td>
+<td align="right">249,875</td>
+<td align="right">274,650</td>
+<td align="right">342,700</td>
+<td align="right">1.25x</td>
+</tr>
+</tbody></table>
+</div><p>These are aggregate completed SELECTs per wall-clock second, not per-request
+latency. With ten workers, allocation falls from 43 to 24 allocations/query and
+from about 4,650 to 3,593 bytes/query. Increasing the catalog size did not produce
+linear per-query overhead. Differences between the two catalog sizes also
+include scheduling and allocator variation.</p>
+<p>Reproduce:</p>
+<pre><code class="language-sh">go test ./db -run &#39;^$&#39; -bench &#39;^BenchmarkSelectPoint$&#39; \
+  -benchmem -benchtime=1s -count=3 -cpu=4
+
+go test ./db -run &#39;^$&#39; -bench &#39;^BenchmarkCatalogWorkloads$&#39; \
+  -benchmem -benchtime=200ms -count=3 -cpu=1,4
+</code></pre>
+<p>The broader write benchmarks also assert that the final sum equals the exact
+number of successful updates, then run integrity checking.</p>
+<h2 id="profile-findings-and-changes">Profile findings and changes</h2>
+<p>CPU, mutex, block and allocation profiles isolated repeated SELECT planning and
+shared lifecycle synchronization. Prepared primary-key reads were constructing
+scan/OR candidates and discarding them before using their existing point reader.
+That work is now skipped for complete prepared PK predicates. The ordinary
+reader still validates types, reads the statement snapshot and transaction
+overlay, and evaluates residual predicates.</p>
+<p>Cancellation registration now uses a session-local mutex rather than the database
+lifecycle mutex. Registration publishes the cancel function before checking
+close flags, so concurrent Close either sees the callback or the operation
+cancels itself. The shutdown gate uses an atomic reader fast path; queued writers
+still block new readers, and cancelled waiters wake successors. The original
+mutex-protected path remains for waiting. Statement catalog snapshots and
+logical DDL/writer locks remain intact.</p>
+<p>The final SELECT profile no longer shows material session-registration or
+shutdown-gate mutex contention. Allocation and GC for caller-owned row maps and
+result metadata remain substantial CPU costs. Profile timings are diagnostic;
+throughput figures above come from separate unprofiled runs. Go benchmark
+profiles also include calibration and fixture setup, so residual storage-write
+profile samples are not writes in the timed SELECT workload.</p>
+<p>TPC-C profiling additionally found unnecessary row-ID reservations on inserts
+whose keys are already explicit primary keys. Those inserts no longer advance a
+shared hidden-row-ID counter or repeatedly acquire the catalog publication mutex.
+Hidden-row-ID tables and AUTOINCREMENT retain allocation/reservation and durability
+checks. INSERT SELECT follows the same rule. <code>LastID</code> remains the integer primary
+key or generated hidden ID; composite/noninteger clustered keys return zero
+rather than allocating an unrelated unused ID.</p>
+<h2 id="transactional-measurements">Transactional measurements</h2>
+<p>All three one-minute runs use ten workers, the default seeded TPC-C-inspired
+fixture, prepared statements, 4 KiB pages, WAL enabled and WAL fsync disabled.
+Loading, preparation, validation and close/reopen are outside the timing.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Version</th>
+<th align="right">Committed tx/s</th>
+<th align="right">Mean ms</th>
+<th align="right">p50 ms</th>
+<th align="right">p99 ms</th>
+<th align="right">Failed transactions</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Old name catalog</td>
+<td align="right">2,071</td>
+<td align="right">4.80</td>
+<td align="right">3.23</td>
+<td align="right">24.51</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td>ID catalog before tuning</td>
+<td align="right">2,057</td>
+<td align="right">4.83</td>
+<td align="right">3.23</td>
+<td align="right">25.10</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td>Final tuned code</td>
+<td align="right">2,371</td>
+<td align="right">4.20</td>
+<td align="right">1.59</td>
+<td align="right">34.55</td>
+<td align="right">0</td>
+</tr>
+</tbody></table>
+</div><p>Each run passed all 15 consistency assertions both immediately and after reopen.
+Expected invalid-item rollbacks and shutdown cancellations are reported separately.
+The catalog change alone is -0.6% in this pair; tuning increases committed
+throughput 15.2% and reduces the median transaction time about 51%.</p>
+<p>The aggregate p99 increased. These are single fresh, growing one-minute runs;
+higher throughput creates more orders and index entries during the same period.
+Delivery and payment tails remain bottlenecks, so this result is not a claim that
+every transaction class or percentile improved. An intermediate tuning run
+recorded 2,450 tx/s with p99 31.12 ms; it is retained alongside the final run.
+Repeated microbenchmark results and raw transaction reports remain available;
+small differences between individual runs should not be treated as definitive.</p>
+<p>The final 15-second diagnostic profile reduces aggregate sampled mutex delay
+from about 51.4 seconds to 10.0 seconds across workers. This is summed delay,
+not wall-clock time, and profiling adds overhead. The unnecessary row-ID
+allocator/record-write contention disappears. Session creation now uses a shared
+catalog lock and atomic snapshot-reader IDs. Deadlock detection locks only shards
+represented in its frozen wait graph, preserving a coherent cycle check without
+blocking unrelated resources. Detector-attributed delay falls from 4.25 seconds
+in the intermediate profile to 0.44 seconds in the final profile. Remaining
+contention is primarily in actual row/unique lock ownership, alongside allocation,
+GC and storage iteration work.</p>
+<p>Reproduce a throughput run and a separate diagnostic run:</p>
+<pre><code class="language-sh">go run ./cmd/tpcc -workers 10 -duration 1m -json /tmp/slopdb-tpcc.json
+go run ./cmd/tpcc -workers 10 -duration 15s \
+  -profile-dir /tmp/slopdb-bench/tpcc-profiles \
+  -json /tmp/slopdb-bench/tpcc-profile.json
+go tool pprof -top /tmp/slopdb-bench/tpcc-profiles/mutex.pprof
+</code></pre>
+<h2 id="consistency-and-rename-verification">Consistency and rename verification</h2>
+<p>Permanent tests cover:</p>
+<ul>
+<li>An active writer finishes and commits before a queued rename publishes;
+acknowledged rows and indexes survive reopen.</li>
+<li>Writers queued behind a rename refresh the catalog on commit or rollback.
+Warmed prepared statements cannot silently write through an obsolete storage
+mapping, including after the old logical name is reused.</li>
+<li>Ten writers update through a stable view while its base table repeatedly
+renames. Both disjoint rows and one contended row retain all 500 updates.</li>
+<li>A point-read cursor pinned before rename continues reading its original
+snapshot; its next statement sees the new catalog and reused logical name.</li>
+<li>A child process crashes without Close after 500 acknowledged inserts alongside
+repeated renames, with another rename uncommitted. Reopen retains every row,
+its exact value, the committed catalog and secondary index.</li>
+<li>Execution-gate reader/writer exclusion, writer preference and cancellation,
+plus the full transaction, foreign-key, storage and recovery suites under the
+race detector.</li>
+</ul>
+<p>Crash tests use the default synced WAL. Performance runs keep WAL enabled and
+WAL fsync disabled; these are intentionally different durability settings.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/catalog-performance.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

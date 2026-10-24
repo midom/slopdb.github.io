@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Ordered GROUP BY and TPC-H Q18 — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Ordered GROUP BY and TPC-H Q18 — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / ORDERED GROUP BY AND TPC-H Q18</p><h1 id="ordered-group-by-and-tpc-h-q18">Ordered GROUP BY and TPC-H Q18</h1>
+<p>Q18&#39;s inner query groups lineitems by <code>l_orderkey</code>. The table is already
+clustered by <code>(l_orderkey,l_linenumber)</code>, so each order&#39;s rows are contiguous.
+Retaining every group in a hash map added unnecessary work: at the default
+64 MiB operator budget, the map crossed its limit and restarted the scan into
+external sorting.</p>
+<p>Aggregation now recognizes a GROUP BY consisting of a leading clustered
+primary-key prefix over one ordered scan interval. Both typed and interpreted
+execution retain one reusable accumulator, finalize its HAVING/projection when
+the key changes, and continue to the next group. Rejected WHERE rows never
+create or split groups. Aliases and ordinal GROUP BY expressions are resolved
+before checking eligibility. Secondary index scans, point sets, multiple
+intervals, joins and non-prefix expressions retain their existing grouping
+paths because their visitation order does not prove this property.</p>
+<p>A focused diagnostic on the existing SF=0.2 development database executed:</p>
+<pre><code class="language-sql">SELECT l_orderkey
+FROM lineitem
+GROUP BY l_orderkey
+HAVING SUM(l_quantity) &gt; 300;
+</code></pre>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Inner-query evidence</th>
+<th align="right">Group map with spill</th>
+<th align="right">Ordered aggregation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>EXPLAIN ANALYZE execution</td>
+<td align="right">10.495 s</td>
+<td align="right">3.078 s</td>
+</tr>
+<tr>
+<td>Process allocation delta</td>
+<td align="right">3.9406 GB</td>
+<td align="right">0.5588 GB</td>
+</tr>
+<tr>
+<td>Process allocations</td>
+<td align="right">32.17 million</td>
+<td align="right">3.91 million</td>
+</tr>
+<tr>
+<td>Temporary spill output</td>
+<td align="right">68.50 MB</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td>Scan passes</td>
+<td align="right">Partial scan, then full scan</td>
+<td align="right">One full scan</td>
+</tr>
+<tr>
+<td>Returned groups</td>
+<td align="right">9</td>
+<td align="right">9</td>
+</tr>
+</tbody></table>
+</div><p>The earlier map scan read 645,504 rows before restarting across all 1,199,969
+lineitems. The ordered operator consumes that input once. These are focused
+CPU-profiled diagnostic executions, not repeated full Q18/TPC-H comparisons.
+Full TPC-H comparisons verify complete query answers independently.</p>
+<p>Regression tests cover typed/interpreted paths, HAVING, aliases and ordinals,
+NULL aggregate arguments, DISTINCT and GROUP_CONCAT, BLOB/REAL clustered keys,
+range filtering, pagination, prepared rebinding, rollback/reopen, cancellation
+and expression errors. A typed execution invariant asserts that 100 groups
+reuse the same accumulator pointer and retain at most 512 estimated accumulator
+bytes rather than accumulating one object per group. EXPLAIN ANALYZE identifies
+the path as <code>OrderedAggregate</code>.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/tpch-ordered-aggregation.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

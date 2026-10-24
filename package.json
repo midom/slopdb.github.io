@@ -1,0 +1,12 @@
+{
+  "name": "slopdb-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:docs": "node scripts/build-docs.mjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "marked": "16.4.1"
+  }
+}

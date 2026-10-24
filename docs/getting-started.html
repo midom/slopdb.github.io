@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Getting started with SlopDB — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Getting started with SlopDB — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html" aria-current="page">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / GETTING STARTED WITH SLOPDB</p><h1 id="getting-started-with-slopdb">Getting started with SlopDB</h1>
+<p>Build from the repository root with Go 1.22.2 or newer, then open a database:</p>
+<pre><code class="language-sh">go build -o slopdb .
+./slopdb ./example-db
+</code></pre>
+<p>In the SQL prompt:</p>
+<pre><code class="language-sql">CREATE TABLE accounts (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    balance INTEGER NOT NULL CHECK (balance &gt;= 0)
+);
+
+INSERT INTO accounts VALUES (1, &#39;Ada&#39;, 100), (2, &#39;Lin&#39;, 250);
+SELECT name, balance FROM accounts ORDER BY balance DESC;
+</code></pre>
+<p>Use <code>.help</code> to see CLI commands, <code>.tables</code> and <code>.schema</code> to inspect tables, and
+<code>.quit</code> to close the database. Run a SQL file with:</p>
+<pre><code class="language-sh">./slopdb ./example-db &lt; queries.sql
+</code></pre>
+<p>Pipes and redirected files accept SQL only by default. For scripts containing
+CLI dot commands, enable them explicitly:</p>
+<pre><code class="language-sh">./slopdb --allow-dot-commands ./example-db &lt; cli-script.sql
+</code></pre>
+<p>Interactive terminal sessions enable dot commands automatically. See
+<a href="application-operations.html">application operations</a> for settings, shutdown,
+backups and routine maintenance.</p>
+<h2 id="using-the-go-api">Using the Go API</h2>
+<p>The <code>db</code> package provides <code>Open</code>, <code>Exec</code>, <code>Query</code>, <code>Prepare</code>, independent
+<code>Session</code> handles and <code>Tx</code> transactions. Context-aware methods support deadlines
+and cancellation. Close streaming results when finished and check database
+close errors.</p>
+<p>See <a href="prepared-statements.html">prepared statements</a> for parameter binding and
+transaction examples, and <a href="application-operations.html">application operations</a>
+for row iteration, bulk loading, backup and integrity checks.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/getting-started.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

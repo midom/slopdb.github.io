@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SQL integrity and execution behavior — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>SQL integrity and execution behavior — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html" aria-current="page">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SQL INTEGRITY AND EXECUTION BEHAVIOR</p><h1 id="sql-integrity-and-execution-behavior">SQL integrity and execution behavior</h1>
+<p>SlopDB implements a subset of SQL with SQLite and MySQL extensions. These rules
+make supported operations enforce their declared meaning; they do not claim full
+ISO SQL conformance.</p>
+<h2 id="keys-and-types">Keys and types</h2>
+<p>Every component of a PRIMARY KEY is implicitly NOT NULL. This applies to VALUES,
+INSERT ... SELECT, defaults, and UPDATE, including composite keys. Explicit NULL
+is rejected even for INTEGER PRIMARY KEY AUTOINCREMENT. Omit an AUTOINCREMENT
+column to generate an ID; omitting an ordinary primary-key column is an error
+unless its DEFAULT supplies a non-NULL value. Duplicate primary-key declarations
+and invalid AUTOINCREMENT declarations are rejected.</p>
+<p>Automatic IDs use persistent counters by default. An ID allocated by a committed
+INSERT remains reserved after its row is deleted and the database is reopened.</p>
+<p>Set <code>storage.Options.DisableAutoIncrementPersistence = true</code>, or start the CLI
+with <code>--no-autoincrement-persistence</code>, to keep these reservations in memory.
+In this mode, reopening the database starts allocation above the highest row ID
+still present. Deleted high IDs can therefore be used again. IDs stay reserved
+within one open instance. Row data still uses the selected WAL and fsync mode.
+The option applies to all automatic-ID columns in that open instance. Previously
+stored counters are ignored for allocation while this option is enabled.</p>
+<p>All columns enforce their declared INTEGER, REAL, TEXT, or BLOB type after the
+existing affinity conversions. <code>VARCHAR(n)</code> uses TEXT storage and collation,
+but limits the stored value to <code>n</code> Unicode code points. <code>VARBINARY(n)</code> uses BLOB
+storage and limits the value to <code>n</code> bytes. Both require a positive integer length,
+reject overlength INSERT/UPDATE/ALTER results without truncation, and retain
+their declarations in schema introspection. Length is checked on the stored
+text before Unicode collation normalization; each invalid UTF-8 byte counts as
+one decoded replacement rune for this limit. BLOB values remain unaffected by
+text collation. <code>CAST(... AS VARCHAR(n))</code> and <code>CAST(... AS VARBINARY(n))</code> use the
+same limits. For example, numeric text can become INTEGER,
+and an INTEGER can become REAL, but arbitrary text cannot be stored in an
+INTEGER column. Point updates and general DML follow the same rules. UNIQUE
+continues to permit multiple NULL values, and CHECK accepts UNKNOWN as well as
+TRUE.</p>
+<p>Increasing a VARCHAR or VARBINARY length with <code>ALTER COLUMN ... TYPE</code> updates
+catalog metadata without rewriting rows or indexes. A shorter length checks
+existing rows by default. <code>ALLOW EXISTING</code> makes a shorter length apply to new
+values while preserving older oversized values on unrelated updates; explicit
+assignments must meet the new length. See <a href="alter-table.html">ALTER table</a>.</p>
+<p>On opening an older database, valid primary-key metadata is upgraded to NOT
+NULL. A bounded probe detects the legacy NULL-key storage band. Opening a table
+with legacy NULL keys fails with a repair message rather than hiding rows or
+silently assigning new identities. Repair such rows using the previous version
+before upgrading. Stored DEFAULT and CHECK expressions must parse and validate;
+loading no longer silently drops a malformed constraint.</p>
+<h2 id="foreign-keys">Foreign keys</h2>
+<p>Column and table foreign keys are enforced against a PRIMARY KEY or UNIQUE
+candidate key with compatible column types. Composite and self references are
+supported, including reordered candidate-key columns and an omitted referenced
+column list that defaults to the parent&#39;s primary key.</p>
+<p>Validation uses the final statement state, permitting a multi-row self reference
+to a parent inserted later in the same statement. Any NULL component exempts a
+reference (MATCH SIMPLE). Missing parents, parent deletes or key changes that
+would orphan children, and dropping a referenced table or its only supporting
+unique index are rejected. Referenced parent rows are locked until transaction
+completion, including UNIQUE-key references, so concurrent child inserts and
+parent changes cannot both commit an orphan. Failed statements roll back their
+writes. Renames preserve references, and transaction rollback restores the
+original constraint metadata.</p>
+<p>ON DELETE / ON UPDATE NO ACTION and RESTRICT are accepted with immediate
+statement validation. CASCADE, SET NULL, SET DEFAULT, deferred constraints, and
+other unsupported constraint options are rejected explicitly. Existing foreign
+key data is not scanned or repaired automatically on open; older versions did
+not enforce those references. New writes and changes to referenced parents are
+validated.</p>
+<h2 id="expressions-and-grouping">Expressions and grouping</h2>
+<p>Scalar subqueries return NULL for zero rows, a value for one row and one column,
+and an error for extra rows or columns. Division by zero, integer overflow,
+non-numeric arithmetic, invalid numeric casts, and floating arithmetic overflow
+produce errors. Integer modulo requires integer operands.</p>
+<p>A grouped query must use grouped expressions, aggregate expressions, constants,
+or a simple table&#39;s columns functionally dependent on its grouped primary key.
+Arbitrary values from the first row of a group are no longer accepted. Aggregate
+calls are rejected in WHERE, JOIN ON, and GROUP BY, including nested aggregates.
+COUNT() and COUNT(DISTINCT *) are invalid. Aggregate DISTINCT, aggregates inside
+CASE/IN/BETWEEN, and aggregates used only in ORDER BY are evaluated correctly.
+GROUP BY accepts output positions; supported grouping aliases resolve to their
+expressions. Function names and argument counts are validated even on empty
+inputs. DEFAULT expressions cannot refer to columns or subqueries, and CHECK
+cannot contain a subquery or refer to an unknown column.</p>
+<p>TRUE and FALSE are recognized. SQL three-valued NULL logic remains intact.
+Unsupported conflict policies produce an error rather than being ignored. The
+existing SQLite-style truth values, affinity, scalar
+MIN/MAX, AUTOINCREMENT, REPLACE, TOTAL, GROUP_CONCAT, date functions, LIMIT, and
+MySQL-style introspection remain dialect extensions. Supported CTEs, recursive
+CTEs, window functions and UPSERT now have their own feature documentation. Other unimplemented language features remain outside this
+subset.</p>
+<h2 id="text-collation">Text collation</h2>
+<p>The database-wide default is <code>BINARY</code>, which compares TEXT as bytes and keeps
+existing databases compatible. <code>PRAGMA collation</code> reads the current mode;
+<code>PRAGMA collation=&#39;NFKC_CI&#39;</code> or <code>db.SetCollation(&quot;NFKC_CI&quot;)</code> changes it. Supported
+Unicode modes are <code>NFC</code>, <code>NFD</code>, <code>NFKC</code>, and <code>NFKD</code>, each optionally suffixed
+<code>_CI</code> for Unicode case folding. NFC/NFD treat canonically equivalent strings
+as equal; NFKC/NFKD also equate compatibility forms. Invalid UTF-8 text remains
+bytewise so normalization does not silently replace stored bytes.</p>
+<p>The mode affects TEXT equality, ordering, grouping, <code>LIKE</code> matching and text
+index keys. <code>BINARY expression</code> or <code>expression COLLATE BINARY</code> overrides it for
+that expression. A <code>TEXT BINARY</code> or <code>TEXT COLLATE BINARY</code> column keeps bytewise
+comparison and indexing across database mode changes. Other column collations
+are rejected. Changing the mode atomically rebuilds clustered TEXT primary
+keys and secondary indexes. If newly equivalent values would violate a PRIMARY
+KEY or UNIQUE constraint, the change fails and the old mode and indexes remain.
+The new mode persists across reopening and participates in transaction rollback.
+See <a href="text-collation.html">Text collation</a> for examples and operational details.</p>
+<h2 id="composite-query-execution">Composite query execution</h2>
+<p>Composite primary keys and secondary indexes use equality prefixes, finite
+literal IN lists, and integer ranges. Full primary-key equality uses a direct
+row lookup before considering covering indexes. Composite IN point sets use a
+batched read view; duplicates and NULLs preserve predicate semantics. Ordered
+ranges scan forward or backward and stop after LIMIT/OFFSET when safe. A
+noncovering secondary lookup fetches the current base row. Aggregation,
+DISTINCT, and residual predicates preserve their ordinary evaluation rules.</p>
+<p>BETWEEN supplies inclusive bounds to composite primary-key and secondary-index
+reads, including signed numeric literals and bound parameters. The original
+predicate remains a residual check when only one bound is usable or another
+condition tightens the range, preserving mixed-type and NULL semantics.</p>
+<p>UPDATE and DELETE use bounded composite primary-key ranges, collect rows, and
+close their iterators before writing. Transaction overlays merge only private
+keys within the requested range, while the storage read view excludes unrelated
+SSTables. FOR UPDATE SKIP LOCKED continues scanning to fill the requested LIMIT.
+EXPLAIN reports these ranges, direct lookups, batched reads, and reverse scans.</p>
+<h2 id="validation">Validation</h2>
+<p>The focused checks live in <code>tests/regression/</code> and run with <code>go test ./...</code>;
+see <a href="testing.html">Testing</a>:</p>
+<ul>
+<li><code>sql_standard_test.go</code>: 134 checks for key rejection, atomic rollback,
+foreign keys, concurrent-safe parent changes, renames, casts, numeric errors,
+grouping, scalar subqueries, DDL validation, empty-input DML validation, and
+reopen behavior.</li>
+<li><code>tuple_read_plans_test.go</code>: optimized-query versus forced-scan comparisons,
+including BETWEEN, signed bounds, IN duplicates/NULL/mixed types, residual filters,
+aggregate/DISTINCT handling, ordering, aliases, private writes, and reopen.</li>
+<li><code>between_read_plans_test.go</code>: prepared BETWEEN reads across the int64 range,
+NULLs, real bounds, 64-bit pagination, unlimited payload sorting and reopen.</li>
+<li><code>sql_differential_test.go</code>: 599 overlapping SQL cases compared with Python&#39;s
+SQLite reference for three-valued logic, aggregates, GROUP BY, joins, and
+scalar subqueries. Intentional stricter behavior, such as zero division and
+NULL primary keys, is checked separately.</li>
+<li><code>legacy_primary_keys_test.go</code>: valid old-catalog upgrade and rejection of legacy
+NULL primary-key rows.</li>
+<li><code>foreign_concurrency_test.go</code>: 80 competing child-insert/parent-delete races,
+UNIQUE parent locking, and composite queue SKIP LOCKED, also run with <code>-race</code>.</li>
+</ul>
+<p>The regression suites passed 45 general read checks, 177 ordered
+read checks, 4,000 concurrent indexed updates and reserved IDs, and 32 workers
+performing atomic 100-row transactions in each of no-fsync, no-WAL, and durable
+modes. Transaction raw-key assertions use the sortable key format and check
+rejection of omitted ordinary primary keys. Historical mixed-type INTEGER
+expectations are superseded by strict-type cases.</p>
+<p><code>go build -o slopdb .</code>, <code>go vet ./...</code>, and <code>git diff --check</code> passed. The
+TPC-C-style workload passed a ten-worker race run, then a sixty-second ordinary
+run with WAL enabled and fsync disabled, including all fifteen consistency
+checks before and after close/reopen. Results are documented with the load
+<a href="https://github.com/midom/slopdb/blob/main/cmd/tpcc/README.md">tester</a>.</p>
+<p><code>INSERT ... ON CONFLICT</code> supports explicit PRIMARY KEY/UNIQUE targets, DO NOTHING, and DO UPDATE with excluded values and an optional WHERE. See <a href="upsert.html">UPSERT semantics</a> for constraints, triggers, concurrency, generated IDs, and supported target syntax.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/sql-semantics.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

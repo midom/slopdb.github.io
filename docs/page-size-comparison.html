@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Database page-size comparisons — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Database page-size comparisons — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / DATABASE PAGE-SIZE COMPARISONS</p><h1 id="database-page-size-comparisons">Database page-size comparisons</h1>
+<p>The latest <a href="canonical-storage-comparison.html">canonical SQL storage comparison</a>
+replays identical SQL bytes into every fresh SlopDB/SQLite/DuckDB case and verifies
+every logical value twice. SlopDB windows match blocks, and final size is measured
+only after every SSTable is rewritten into L6. All native results are reloaded;
+previous storage rows are superseded. No performance tests run in this refresh.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Dataset</th>
+<th align="right">Rows</th>
+<th align="right">Logical payload MiB</th>
+<th align="right">Canonical SQL MiB</th>
+<th>Verified per supported cell</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TPC-C</td>
+<td align="right">10,518,120</td>
+<td align="right">680.69</td>
+<td align="right">306.49</td>
+<td>Every column, twice</td>
+</tr>
+<tr>
+<td>TPC-H</td>
+<td align="right">1,731,999</td>
+<td align="right">225.00</td>
+<td align="right">235.64</td>
+<td>Every column, twice</td>
+</tr>
+</tbody></table>
+</div><h2 id="current-tpc-c-final-storage">Current TPC-C final storage</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Page/block</th>
+<th align="right">Final files MiB</th>
+<th align="right">Final allocated MiB</th>
+<th align="right">Load s (diagnostic)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SlopDB</td>
+<td>4 KiB (default)</td>
+<td align="right">182.50</td>
+<td align="right">182.84</td>
+<td align="right">244.8</td>
+</tr>
+<tr>
+<td>SlopDB</td>
+<td>16 KiB</td>
+<td align="right">148.83</td>
+<td align="right">149.25</td>
+<td align="right">243.3</td>
+</tr>
+<tr>
+<td>SlopDB</td>
+<td>64 KiB</td>
+<td align="right">145.44</td>
+<td align="right">145.91</td>
+<td align="right">240.9</td>
+</tr>
+<tr>
+<td>SlopDB</td>
+<td>1 MiB</td>
+<td align="right">150.04</td>
+<td align="right">150.41</td>
+<td align="right">241.1</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>4 KiB (default)</td>
+<td align="right">449.99</td>
+<td align="right">450.00</td>
+<td align="right">155.0</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>16 KiB</td>
+<td align="right">447.91</td>
+<td align="right">447.92</td>
+<td align="right">150.3</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>64 KiB</td>
+<td align="right">448.50</td>
+<td align="right">448.52</td>
+<td align="right">149.3</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>1 MiB</td>
+<td align="right">Unsupported</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>16 KiB</td>
+<td align="right">574.11</td>
+<td align="right">574.12</td>
+<td align="right">719.3</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>64 KiB</td>
+<td align="right">268.01</td>
+<td align="right">268.02</td>
+<td align="right">782.2</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>256 KiB (default)</td>
+<td align="right">277.76</td>
+<td align="right">277.77</td>
+<td align="right">772.2</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>1 MiB</td>
+<td align="right">Unsupported</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+</tbody></table>
+</div><h2 id="current-tpc-h-final-storage">Current TPC-H final storage</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Page/block</th>
+<th align="right">Final files MiB</th>
+<th align="right">Final allocated MiB</th>
+<th align="right">Load s (diagnostic)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SlopDB</td>
+<td>4 KiB (default)</td>
+<td align="right">214.51</td>
+<td align="right">214.78</td>
+<td align="right">107.4</td>
+</tr>
+<tr>
+<td>SlopDB</td>
+<td>16 KiB</td>
+<td align="right">181.95</td>
+<td align="right">182.23</td>
+<td align="right">103.6</td>
+</tr>
+<tr>
+<td>SlopDB</td>
+<td>64 KiB</td>
+<td align="right">170.12</td>
+<td align="right">170.39</td>
+<td align="right">102.5</td>
+</tr>
+<tr>
+<td>SlopDB</td>
+<td>1 MiB</td>
+<td align="right">163.71</td>
+<td align="right">163.98</td>
+<td align="right">101.6</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>4 KiB (default)</td>
+<td align="right">324.05</td>
+<td align="right">324.05</td>
+<td align="right">81.4</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>16 KiB</td>
+<td align="right">320.84</td>
+<td align="right">320.86</td>
+<td align="right">80.6</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>64 KiB</td>
+<td align="right">321.75</td>
+<td align="right">321.76</td>
+<td align="right">79.9</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>1 MiB</td>
+<td align="right">Unsupported</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>16 KiB</td>
+<td align="right">271.65</td>
+<td align="right">271.66</td>
+<td align="right">232.8</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>64 KiB</td>
+<td align="right">232.89</td>
+<td align="right">232.89</td>
+<td align="right">262.5</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>256 KiB (default)</td>
+<td align="right">200.26</td>
+<td align="right">200.27</td>
+<td align="right">235.8</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>1 MiB</td>
+<td align="right">Unsupported</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+</tbody></table>
+</div><p>Full methods, exact logical data/hash evidence, loading qualifications and raw
+artifacts are in the <a href="canonical-storage-comparison.html">canonical report</a>.
+The results below are historical performance evidence from an older 8 MiB-window
+configuration; they are not timings of the canonical storage fixtures.</p>
+<h2 id="historical-native-footprint-diagnostic">Historical native footprint diagnostic</h2>
+<p>DuckDB’s 16 KiB TPC-C file is <strong>571.78 MiB</strong>, versus <strong>265.95 MiB at 64 KiB</strong>.
+Its reported 36,593 blocks include 36,586 used blocks and only seven free
+blocks: <strong>0.109 MiB</strong> of free capacity. At 64 KiB all 4,255 blocks are used;
+at the 256 KiB control all 1,089 are used. VACUUM + CHECKPOINT left these
+inventories unchanged. The small-block penalty is therefore occupied block
+allocation, not a large freelist waiting to be reclaimed. Used blocks include
+indexes, metadata and internal slack, and are not equivalent to raw row payload.
+Per-column/index packing was not captured, so its precise cause remains open.</p>
+<h2 id="historical-tpc-h-execution-with-8-mib-slopdb-windows">Historical TPC-H execution with 8 MiB SlopDB windows</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Page/block target</th>
+<th align="right">Sum of 22 query medians, s</th>
+<th align="right">Relative to engine default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>slopdb</td>
+<td>4 KiB (default)</td>
+<td align="right">39.176</td>
+<td align="right">1.000× elapsed</td>
+</tr>
+<tr>
+<td>slopdb</td>
+<td>16 KiB</td>
+<td align="right">58.755</td>
+<td align="right">1.500× elapsed</td>
+</tr>
+<tr>
+<td>slopdb</td>
+<td>64 KiB</td>
+<td align="right">140.654</td>
+<td align="right">3.590× elapsed</td>
+</tr>
+<tr>
+<td>slopdb</td>
+<td>1 MiB</td>
+<td align="right">Not run: load-only</td>
+<td align="right">—</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>4 KiB (default)</td>
+<td align="right">7.005</td>
+<td align="right">1.000× elapsed</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>16 KiB</td>
+<td align="right">7.643</td>
+<td align="right">1.091× elapsed</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>64 KiB</td>
+<td align="right">11.455</td>
+<td align="right">1.635× elapsed</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>1 MiB</td>
+<td align="right">Unsupported</td>
+<td align="right">—</td>
+</tr>
+<tr>
+<td>duckdb</td>
+<td>16 KiB</td>
+<td align="right">1.057</td>
+<td align="right">1.480× elapsed</td>
+</tr>
+<tr>
+<td>duckdb</td>
+<td>64 KiB</td>
+<td align="right">0.771</td>
+<td align="right">1.080× elapsed</td>
+</tr>
+<tr>
+<td>duckdb</td>
+<td>256 KiB (default)</td>
+<td align="right">0.714</td>
+<td align="right">1.000× elapsed</td>
+</tr>
+<tr>
+<td>duckdb</td>
+<td>1 MiB</td>
+<td align="right">Unsupported</td>
+<td align="right">—</td>
+</tr>
+</tbody></table>
+</div><p>Relative elapsed time below 1× is faster than that engine’s default.
+<a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/storage/pages/query-medians.json">Every query median and sample</a> is retained.</p>
+<h3 id="slopdb-lookup-heavy-query-regressions">SlopDB lookup-heavy query regressions</h3>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Query</th>
+<th align="right">4 KiB seconds</th>
+<th align="right">64 KiB seconds</th>
+<th align="right">4 KiB allocated MiB</th>
+<th align="right">64 KiB allocated MiB</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q05</td>
+<td align="right">6.819</td>
+<td align="right">31.168</td>
+<td align="right">1368.4</td>
+<td align="right">9994.9</td>
+</tr>
+<tr>
+<td>Q06</td>
+<td align="right">2.057</td>
+<td align="right">16.420</td>
+<td align="right">291.7</td>
+<td align="right">5249.5</td>
+</tr>
+<tr>
+<td>Q07</td>
+<td align="right">3.189</td>
+<td align="right">17.344</td>
+<td align="right">646.4</td>
+<td align="right">5748.4</td>
+</tr>
+<tr>
+<td>Q12</td>
+<td align="right">2.426</td>
+<td align="right">17.104</td>
+<td align="right">388.9</td>
+<td align="right">5472.6</td>
+</tr>
+</tbody></table>
+</div><p>These queries use secondary indexes that do not contain all the requested
+lineitem values: Q5/Q7 use supplier access, Q6 ship-date access, and Q12
+receipt-date access. Their saved EXPLAIN plans retain indexed access across
+page sizes for Q5/Q6/Q12; Q7’s outer EXPLAIN hides its derived join. The
+measured samples show increased elapsed time and cumulative allocation. The
+allocation deltas cover the whole Go process during execution, including
+background work, and do not measure cache hits or physical device I/O.</p>
+<p>The code provides a plausible mechanism. On a decoded-cache miss, the
+<a href="https://github.com/midom/slopdb/blob/main/storage/sstable.go">SSTable reader</a> allocates the stored block and decodes
+the entire compressed frame with <code>DecodeAll</code>, including rows unrelated to a
+point lookup. The fixed 128 MiB <a href="https://github.com/midom/slopdb/blob/main/storage/block_cache.go">block cache</a> has
+sixteen 8 MiB shards; larger decoded blocks leave room for fewer blocks in
+each shard. The <a href="https://github.com/midom/slopdb/blob/main/sql/statistics.go">access cost model</a> weights noncovering
+lookups by row count with fixed factors of three through six; the
+<a href="https://github.com/midom/slopdb/blob/main/sql/join_plan.go">join probe cost</a> uses <code>4 + 3 * fanout</code>. Neither model
+scales those costs with <code>PageSize</code>. It can therefore select similar lookup
+paths while the bytes decoded per miss grow. These are code-based explanations;
+the TPC-H reports contain no measured cache counters. Page-aware lookup costs,
+covering projections and scan/probe choices are candidates for further work.</p>
+<h2 id="historical-tpc-c-execution-with-8-mib-slopdb-windows">Historical TPC-C execution with 8 MiB SlopDB windows</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Page/block target</th>
+<th align="right">Committed TPS</th>
+<th align="right">p95 latency, ms</th>
+<th align="right">p99 latency, ms</th>
+<th align="right">Failed transactions</th>
+<th>Status</th>
+<th align="right">Retries</th>
+<th align="right">Shutdown cancellations</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>slopdb</td>
+<td>4 KiB (default)</td>
+<td align="right">2,114.4</td>
+<td align="right">15.285</td>
+<td align="right">24.341</td>
+<td align="right">0</td>
+<td>ok</td>
+<td align="right">0</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>slopdb</td>
+<td>16 KiB</td>
+<td align="right">2,200.6</td>
+<td align="right">14.542</td>
+<td align="right">23.082</td>
+<td align="right">0</td>
+<td>ok</td>
+<td align="right">0</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>slopdb</td>
+<td>64 KiB</td>
+<td align="right">2,238.9</td>
+<td align="right">14.072</td>
+<td align="right">22.761</td>
+<td align="right">0</td>
+<td>ok</td>
+<td align="right">0</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>slopdb</td>
+<td>1 MiB</td>
+<td align="right">Not run: load-only</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td>skipped</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>4 KiB (default)</td>
+<td align="right">2,579.6</td>
+<td align="right">1.193</td>
+<td align="right">128.831</td>
+<td align="right">0</td>
+<td>ok</td>
+<td align="right">1142</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>16 KiB</td>
+<td align="right">1,575.1</td>
+<td align="right">1.375</td>
+<td align="right">179.604</td>
+<td align="right">48</td>
+<td>failed</td>
+<td align="right">1365</td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>64 KiB</td>
+<td align="right">1,039.3</td>
+<td align="right">1.863</td>
+<td align="right">252.096</td>
+<td align="right">110</td>
+<td>failed</td>
+<td align="right">1463</td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td>1 MiB</td>
+<td align="right">Unsupported</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td>unsupported</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+<tr>
+<td>duckdb</td>
+<td>16 KiB</td>
+<td align="right">219.0</td>
+<td align="right">136.807</td>
+<td align="right">220.478</td>
+<td align="right">356</td>
+<td>failed</td>
+<td align="right">9902</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>duckdb</td>
+<td>64 KiB</td>
+<td align="right">223.6</td>
+<td align="right">134.990</td>
+<td align="right">214.905</td>
+<td align="right">374</td>
+<td>failed</td>
+<td align="right">10056</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>duckdb</td>
+<td>256 KiB (default)</td>
+<td align="right">224.1</td>
+<td align="right">133.656</td>
+<td align="right">209.788</td>
+<td align="right">347</td>
+<td>failed</td>
+<td align="right">9732</td>
+<td align="right">9</td>
+</tr>
+<tr>
+<td>duckdb</td>
+<td>1 MiB</td>
+<td align="right">Unsupported</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td>unsupported</td>
+<td align="right">—</td>
+<td align="right">—</td>
+</tr>
+</tbody></table>
+</div><p>Committed TPS is retained for completed runs alongside their transaction failure
+counts and status. SQLite contention can exhaust the common five-retry cap under
+its 250 ms writer-lock budget: those cells remain failed rather than clean
+throughput results, even when all thirty consistency assertions pass. Settings
+and failure classification were kept unchanged; failed reports are retained.
+DuckDB’s failed cells similarly exhausted the retry cap on optimistic write
+conflicts. Mean/p95/p99 latency samples contain only successful logical
+transactions, including retries before a successful commit. Failed, exhausted
+and canceled transactions are excluded, so SQLite’s low successful p95 does
+not describe the lock waits of its failed transactions.</p>
+<h2 id="superseded-exploratory-runs">Superseded exploratory runs</h2>
+<p>The earlier page matrix at revision <code>24cd6a2f9fe7127bf3a3947b404f58f5482ffd6b</code>
+was stopped before completion when the workload requirements changed. Its partial
+results are superseded: they preceded the bulk-loading and large-window compression
+fixes and are not used for the final tables. No interrupted sample is a successful
+timing.</p>
+<h2 id="historical-execution-settings-validation-and-limits">Historical execution settings, validation and limits</h2>
+<p>The following settings describe the earlier 8 MiB-window execution/storage archive.
+Those jobs ran serially on the same machine. Load, preparation, validation,
+maintenance and close/reopen are outside transaction/query timing. OS caches
+are not reset. TPC-H uses one measured sample per query after one warmup at benchmarked
+sizes; its total sums twenty-two medians, each a single sample. SlopDB 1 MiB is
+explicitly excluded from query timing and query-answer checks. The TPC-H runner’s
+<code>-load-only</code> records the skip explicitly; its Q15 view is schema setup. TPC-C has one run per
+cell, which is descriptive evidence rather than statistical proof. Each storage
+size also comes from one fresh load. Equal SQL values do not imply identical
+internal sequence bytes or compaction/file boundaries, so footprint deltas are
+observed outcomes rather than a decomposition of codec efficiency alone.</p>
+<p>WAL remains enabled and WAL fsync is disabled. SlopDB and DuckDB retain
+checkpoint and data-file synchronization; DuckDB bypass uses a Linux preload
+shim restricted to the exact benchmark WAL file. SQLite uses synchronous=OFF,
+which also disables checkpoint synchronization, so durability costs differ.
+SlopDB uses READ COMMITTED with row locks, SQLite serializes writers with
+BEGIN IMMEDIATE, and DuckDB uses snapshot isolation with optimistic conflict
+retries. These transaction and contention semantics also affect throughput.</p>
+<p>SlopDB keeps its 4 MiB memtable, 128 MiB decoded-block cache and auto compression
+fixed. SQLite uses a 128 MiB cache budget per connection and an approximately
+64 MiB automatic-checkpoint threshold, expressed in pages for each size. Timed
+TPC-C can open eleven SQLite connections; its aggregate cache allowance differs
+from SlopDB’s shared 128 MiB cache. DuckDB uses one execution thread and a 1 GB
+process memory limit. Budgets stay constant within each engine across page sizes;
+total memory allowances are not equal across engines. SlopDB’s default 64 MiB
+operator budget is a soft working-set estimate, not a process memory limit;
+results and some intermediate shapes still materialize. Page sizes describe
+different physical units: SlopDB&#39;s uncompressed variable-block target, SQLite&#39;s
+fixed B-tree page and DuckDB&#39;s persistent block. SlopDB blocks are compressed
+and are not padded to the requested target.</p>
+<p>Sizes sum all regular database files after clean close, including indexes,
+catalog metadata and locks. Allocated totals use filesystem block counts,
+including directory blocks. Input data, reports,
+profiles and query spill files are outside the database directories. Large task-created
+databases were removed only after both validation phases and their per-file
+inventories were saved; source inputs and earlier databases were preserved. MiB means
+1,048,576 bytes. Maintenance is SlopDB VACUUM, SQLite VACUUM, or DuckDB VACUUM
+followed by CHECKPOINT; these operations have different semantics. DuckDB
+VACUUM itself does not reclaim file space.</p>
+<p>Every TPC-C storage value is checked after reopening and after maintenance.
+TPC-H checks all twenty-two complete answers against independently archived
+DuckDB results at benchmarked sizes, then checks them again after maintenance.
+The 1 MiB TPC-H load-only case verifies persisted row counts/schema and
+hash-verified source inputs; it does not verify every stored column or execute
+query-answer checks.
+Timed TPC-C requires all fifteen consistency assertions immediately after execution and after
+reopening. Expected rollbacks, shutdown cancellations and retries remain
+separate from unexpected failures.</p>
+<p>See <a href="page-sizes.html">page-size support</a>, <a href="page-size-protocol.html">measurement protocol</a>
+and <a href="https://github.com/midom/slopdb/blob/main/cmd/tpcc/compare/README.md">portable comparison runners</a>.</p>
+<p>The storage harness used revision <code>9a6e9de0b8c4d84a7652b1700d59e7e2054238d4</code>; the timed TPC-C harness used
+<code>9a6e9de0b8c4d84a7652b1700d59e7e2054238d4</code>. Compiled Go engines/runners used
+<code>4e55bd60114e679dcb4b96adb12790e416d1cca6</code>; the later harness revision changed
+Python null-report handling only. Python storage SQLite was 3.45.1;
+DuckDB was 1.5.6. Native TPC-C used SQLite 3.51.3 and DuckDB 1.5.6, with
+Go 1.24.0; SlopDB runners used Go 1.22.2. Build metadata and versions are in
+the <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/storage/pages/tpcc-comparison.json">raw throughput manifest</a>.
+<a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/storage/pages/storage-comparison.json">Raw storage cells</a>,
+<a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/storage/pages/manifest.json">artifact hashes</a> and complete query reports
+preserve exact configurations, input hashes, per-file inventories and validation.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/page-size-comparison.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

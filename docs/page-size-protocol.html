@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Page-size measurement protocol — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Page-size measurement protocol — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / PAGE-SIZE MEASUREMENT PROTOCOL</p><h1 id="page-size-measurement-protocol">Page-size measurement protocol</h1>
+<p>Storage comparisons replay one frozen canonical <code>.sql</code> file per dataset into
+fresh SlopDB, SQLite and DuckDB databases. Every engine/page case receives the
+same SQL bytes, schema, indexes, views, INSERT values and transaction boundaries.
+The SQL SHA256 and byte length must match its sidecar manifest before replay.
+There is no benchmark run, per-engine data/schema rewrite, native COPY shortcut
+or query performance test in this storage matrix. Earlier snapshots and timings
+remain historical evidence rather than current comparison cells.</p>
+<p>Use <code>scripts/canonical_storage_fixture.py</code> to dump the pinned source once, then
+<code>scripts/storage_sql_matrix.py --sql DATA.sql --manifest DATA.sql.manifest.json</code>
+to replay it at 16 KiB, 64 KiB and 1 MiB plus default controls. Native engines
+reject 1 MiB; unsupported requests remain explicit. SlopDB&#39;s Zstd maximum window
+matches its configured block target (minimum 1 KiB). All fresh cases use one
+compiled SlopDB revision; every native case is reloaded, not reused.</p>
+<h2 id="supported-sizes-and-interpretation">Supported sizes and interpretation</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>16 KiB</th>
+<th>64 KiB</th>
+<th>1 MiB</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SlopDB</td>
+<td>Supported</td>
+<td>Supported</td>
+<td>Supported</td>
+<td>Target uncompressed SSTable data-block size</td>
+</tr>
+<tr>
+<td>SQLite</td>
+<td>Supported</td>
+<td>Supported</td>
+<td>Unsupported</td>
+<td>Fixed database page size</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>Supported</td>
+<td>Supported</td>
+<td>Unsupported</td>
+<td>Fixed persistent database block size</td>
+</tr>
+</tbody></table>
+</div><p>SlopDB data blocks contain whole entries and restart metadata, and compression
+can reduce their stored size. They are not padded fixed-size pages. Record both
+the configured target and measured physical storage. A larger block can reduce
+index/framing overhead and improve compression while making a point read decode
+more data. Its WAL framing remains independent of SSTable block size.</p>
+<p>SQLite accepts power-of-two pages from 512 through 65,536 bytes. Set
+<code>PRAGMA page_size</code> before creating the database or enabling WAL, then verify the
+actual value after reopening. Invalid values can be silently ignored; an accepted
+SQL statement is insufficient evidence. SQLite cannot change page size while in
+WAL mode. See <a href="https://sqlite.org/pragma.html#pragma_page_size">SQLite page-size documentation</a>
+and <a href="https://sqlite.org/wal.html">WAL restrictions</a>.</p>
+<p>DuckDB accepts power-of-two blocks from 16,384 through 262,144 bytes when
+creating a file. Configure the new file through <code>default_block_size</code> or
+<code>ATTACH ... (BLOCK_SIZE ...)</code>, and read its actual block size from database
+metadata after reopening. The setting does not rewrite an existing file.
+See <a href="https://duckdb.org/docs/current/configuration/pragmas#block-sizes">DuckDB block sizes</a>
+and <a href="https://duckdb.org/docs/current/sql/statements/attach#options">ATTACH options</a>.</p>
+<p>Record unsupported engine/size pairs explicitly. Do not substitute a supported
+size or report a successful measurement for an ignored setting.</p>
+<h2 id="canonical-datasets-and-equality-gates">Canonical datasets and equality gates</h2>
+<p>The TPC-H dump originates from the pinned DBGEN SF=0.2 inputs: eight tables,
+1,731,999 rows, fourteen secondary indexes, ANALYZE and the Q15 view. The TPC-C
+storage dump originates from the pinned 83,165-row committed snapshot, with
+128 replicas except its shared 1,000-row item catalog: 10,518,120 rows across
+256 warehouses. The generator shifts warehouse/history keys once before
+freezing the SQL. Repeated values influence compression; this is a replicated
+storage fixture, not a fresh transactional benchmark.</p>
+<p>Both dumps use identical portable <code>BIGINT</code>, <code>DOUBLE</code> and <code>TEXT</code> declarations
+across engines, including explicit NOT NULL primary keys. Do not replace DuckDB
+INTEGER/REAL types during replay. Multi-row INSERTs contain at most 256 rows;
+transactions contain at most 4,096 rows. Native runners stream statements with
+quote/comment-aware splitting and execute the original text. SlopDB also streams
+and executes those statements through its normal SQL path. SQL, source hashes,
+generation configuration and expected fingerprints remain frozen in manifests.</p>
+<p>After clean close/reopen, read every declared column of every table in its
+canonical key order and compute the exact <code>slopdb-canonical-sql-v1</code> SHA256:</p>
+<ul>
+<li>A row starts with ASCII <code>R</code> and a big-endian uint32 column count.</li>
+<li>NULL is tag 0; its logical payload size is zero.</li>
+<li>int64 is tag 1 plus eight signed big-endian bytes; comparisons remain exact.</li>
+<li>float64 is tag 2 plus eight big-endian IEEE-754 bytes. Values must be finite;
+signed zero is normalized to positive zero. Other floating values are exact.</li>
+<li>Text is tag 3 plus a big-endian uint64 UTF-8 length and the exact UTF-8 bytes.</li>
+</ul>
+<p>Each table report must match the manifest&#39;s row count, SHA256, <code>logical_bytes</code>
+(non-NULL payload: integer/real eight bytes, text UTF-8 bytes) and <code>encoded_bytes</code>
+(payload plus hash framing). Dataset row and logical-byte totals must also match.
+Independent Python and Go encoders verify results. Repeat the complete check after
+maintenance and another close/reopen. Neither row counts alone nor aggregate
+TPC-H answers establish logical-data equality. No size result is published until
+both full-value checks pass. The SQL hash is checked again during/after replay.</p>
+<p>TPC-C throughput fixtures remain separate. Equal-duration benchmark runs commit
+different row counts and values, so their final sizes are not equal-data storage
+comparisons. No TPC-C or TPC-H workload executes in the canonical storage matrix,
+including at 1 MiB. A full-column validation scan verifies storage rather than
+measuring query throughput.</p>
+<h2 id="memory-maintenance-and-timing-controls">Memory, maintenance and timing controls</h2>
+<p>SlopDB defaults to a 4 MiB memtable and a 128 MiB decoded-block cache. Keep
+these byte budgets, compression codec/level and window-to-page policy fixed
+across page sizes. Canonical loads use the same bounded multi-row SQL INSERTs
+and transaction boundaries in every engine. Set the Zstd window
+to the configured data-block target: 4 KiB, 16 KiB, 64 KiB or 1 MiB, respectively.
+Independent blocks do not share compression history. Earlier explicit 8 MiB
+windows are a different configuration and must be labeled historical. The cache has
+sixteen shards, so each default shard retains at most 8 MiB of decoded data.
+Larger pages reduce the number of retained blocks without increasing the cache
+budget. The storage matrix does not collect query throughput or cache-hit samples.</p>
+<p>For SQLite, set any cache budget in KiB with a negative <code>cache_size</code> after the
+page size is established, on every connection. A positive page count would
+increase the memory budget with the page size. Also report <code>wal_autocheckpoint</code>:
+the default thousand-page threshold changes its byte size with the page size.
+Either fix its approximate byte threshold for every variant or identify the
+default checkpoint policy as part of the tested configuration.
+See <a href="https://sqlite.org/pragma.html#pragma_cache_size">SQLite cache sizing</a> and
+<a href="https://sqlite.org/pragma.html#pragma_wal_autocheckpoint">automatic checkpoints</a>.</p>
+<p>Keep DuckDB thread count and memory limit constant, and report the native driver
+or Python version used for each operation. WAL fsync bypass must apply only to
+the exact benchmark WAL path; checkpoint and database-file synchronization stay
+enabled. Do not substitute WAL disabling for WAL fsync disabling.</p>
+<p>Record pre-maintenance sizes after clean close as diagnostic inventories. Report
+SlopDB’s final comparison size only after VACUUM atomically merges and rewrites
+all SSTables, including files already in L6, directly into L6 using the current
+page/window settings. Verify every L0–L5 file count and byte count is zero after
+reopening, and retain all seven level inventories plus the explicit
+<code>full_bottom_level_rewrite</code> operation marker. Merely promoting old files to L6
+does not meet this requirement. Multiple output files are expected: L6 is the
+lowest level, not a requirement to create one enormous SSTable.</p>
+<p>Native maintenance remains SQLite VACUUM, and DuckDB VACUUM followed by
+CHECKPOINT. Every native cell is freshly replayed from the same canonical SQL.
+These operations have different semantics. In particular, DuckDB VACUUM itself does
+not reclaim file space; see <a href="https://duckdb.org/docs/current/sql/statements/vacuum#reclaiming-space">its documentation</a>.
+Do not describe them as identical physical compactions.</p>
+<p>Sum every regular file in the dedicated database directory, including indexes,
+catalog metadata, locks and any remaining WAL. Keep inputs, logs, reports,
+binaries, profiles and query spill files outside that directory. Report apparent
+file bytes and filesystem-allocated bytes separately, including directory
+allocation. The matrix obtains allocated bytes from filesystem <code>st_blocks</code>;
+<code>du -s -B1</code> can independently check them. Preserve a per-file inventory,
+actual page/block metadata, row counts, validation status and exact operations.</p>
+<p>Run loads, maintenance and full tests serially on the same machine. Use fresh
+cases in a recorded order and preserve host/version/build metadata. OS caches are
+not reset. Loading durations are diagnostics, with SQL hashing/open/verification
+boundaries reported by the runner; they are not certified benchmark scores. No
+query or transaction timing samples are collected by this storage matrix.</p>
+<p>With limited disk space, finish a case&#39;s validation, measurements and saved
+reports before removing only that case&#39;s task-created database. Preserve the
+pinned source inputs and previous databases. Leave room for WAL, compaction,
+VACUUM copies and query spills; do not schedule all variants concurrently.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/page-size-protocol.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

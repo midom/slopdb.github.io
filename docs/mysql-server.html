@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="MySQL protocol server — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>MySQL protocol server — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html" aria-current="page">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / MYSQL PROTOCOL SERVER</p><h1 id="mysql-protocol-server">MySQL protocol server</h1>
+<p>SlopDB can serve an existing database directory to MySQL clients over TCP, a
+Unix socket, or both. The wire protocol does not change SlopDB&#39;s SQL semantics.
+One process owns the database; use client connections instead of opening that
+directory from another process while the server is running.</p>
+<pre><code class="language-sh">go build -o slopdb .
+./slopdb --mysql-tcp 127.0.0.1:3306 ./example-db
+mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u slopdb slopdb
+</code></pre>
+<p>For Unix sockets, or both transports together:</p>
+<pre><code class="language-sh">./slopdb --mysql-socket /tmp/slopdb.sock ./example-db
+mysql --protocol=SOCKET --socket=/tmp/slopdb.sock -u slopdb slopdb
+
+./slopdb --mysql-tcp 127.0.0.1:3306 --mysql-socket /tmp/slopdb.sock ./example-db
+</code></pre>
+<p>Specifying either listener flag starts server mode, without reading SQL from
+stdin. Unix sockets are created with permissions <code>0600</code> and removed on clean
+shutdown. An existing socket or file is never removed to make room for a new
+listener. Remove a stale socket yourself after verifying its server has stopped.
+Listener startup errors close any listeners already created and exit nonzero.
+SIGINT and SIGTERM disconnect clients, cancel queries, roll back pending
+transactions, and close and flush the database. Flush failures exit nonzero.</p>
+<p>The default login is <code>slopdb</code> with an empty password; the exposed database name
+is <code>slopdb</code>. Set a password without placing it in command-line arguments:</p>
+<pre><code class="language-sh">export SLOPDB_MYSQL_PASSWORD=&#39;choose-a-password&#39;
+./slopdb --mysql-tcp 127.0.0.1:3306 \
+  --mysql-user app --mysql-database app \
+  --mysql-password-env SLOPDB_MYSQL_PASSWORD ./example-db
+mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u app -p app
+</code></pre>
+<p>A named password environment variable must exist; an explicitly empty value
+permits passwordless login. Authentication uses <code>mysql_native_password</code>. There
+is one configured account, with access to the whole database. MySQL account/grant
+management is not implemented. TLS encryption and CA-verified client certificate
+authentication can be enabled as described below.</p>
+<p>Server mode enables <a href="sql-quoting.html">MySQL quoting</a> by default. Pass
+<code>--mysql-quoting=false</code> to use SlopDB&#39;s ordinary quoting rules. Other CLI storage,
+query timeout, lock timeout, compression and durability flags apply normally;
+WAL and WAL fsync remain enabled by default.</p>
+<h2 id="tls-and-client-certificate-authentication">TLS and client certificate authentication</h2>
+<p>The server supports MySQL&#39;s SSLRequest negotiation with TLS 1.2 and 1.3 over
+both TCP and Unix sockets. Supply a PEM server certificate chain and matching
+private key to enable TLS. Add <code>--mysql-require-tls</code> to reject plaintext logins:</p>
+<pre><code class="language-sh">./slopdb --mysql-tcp 127.0.0.1:3306 \
+  --mysql-tls-cert server-chain.pem --mysql-tls-key server-key.pem \
+  --mysql-require-tls ./example-db
+</code></pre>
+<p>Without <code>--mysql-require-tls</code>, a server configured with only a certificate/key
+accepts both encrypted and plaintext connections. Without any TLS configuration,
+it accepts plaintext connections and does not advertise TLS.</p>
+<p>To require a client certificate signed by a specific CA, add <code>--mysql-tls-ca</code>:</p>
+<pre><code class="language-sh">./slopdb --mysql-tcp 127.0.0.1:3306 --mysql-socket /tmp/slopdb.sock \
+  --mysql-tls-cert server-chain.pem --mysql-tls-key server-key.pem \
+  --mysql-tls-ca client-ca.pem ./example-db
+
+mysql --protocol=TCP -h 127.0.0.1 -P 3306 -u slopdb \
+  --ssl-mode=VERIFY_IDENTITY --ssl-ca=server-ca.pem \
+  --ssl-cert=client-chain.pem --ssl-key=client-key.pem slopdb
+</code></pre>
+<p><code>--mysql-tls-ca</code> is the server&#39;s trust bundle for <strong>client</strong> certificates. It
+implies required TLS and required certificate verification on every connection,
+including Unix sockets. Plaintext cannot bypass certificate authentication.
+Only chains trusted by that bundle are accepted; system roots are not added.
+Certificates must be within their validity period and valid for client
+authentication. Clients should send any intermediate certificates in their
+certificate chain. The client&#39;s <code>--ssl-ca</code>, in contrast, trusts the <strong>server</strong>
+certificate, whose DNS name or IP SAN must match the connection hostname.
+The two CA bundles can contain different issuers.</p>
+<p>A verified certificate is an additional login requirement. Clients must still
+use the configured username and password. To use certificate authentication
+without a password, leave the server password empty and provide a trusted client
+certificate. Any valid certificate trusted by the configured client CA can
+access the configured account; subjects are not mapped to separate accounts.</p>
+<p>Certificate/key flags must be supplied together. A client CA or required TLS
+without a server certificate/key is an error, as are unreadable certificates,
+mismatched keys and an invalid CA PEM file. These CLI errors are reported before
+opening the database or creating listeners. Certificates and trust bundles are
+loaded at startup; restart the server to change them. The authentication timeout
+covers SSLRequest, TLS negotiation and the encrypted MySQL login. Shutdown also
+interrupts incomplete TLS handshakes.</p>
+<h2 id="queries-and-connections">Queries and connections</h2>
+<p>Each authenticated connection owns an independent SlopDB session. Supported
+commands include text queries, ping, database selection, binary prepared
+statements with typed parameters, long parameter data, statement reset/close,
+and connection reset. Results carry column metadata, NULLs, binary values,
+affected-row counts, generated IDs and transaction status. Clients may connect
+without selecting a database; tables still refer to the single exposed database.
+<code>USE</code> and the handshake database name must select that configured name.</p>
+<p><code>BEGIN</code> / <code>START TRANSACTION</code>, <code>COMMIT</code>, <code>ROLLBACK</code> and savepoints use the normal
+SlopDB transaction implementation. Disconnect and connection reset discard
+uncommitted writes. <code>SET [SESSION] autocommit=0</code> starts transactions lazily;
+<code>COMMIT</code> and <code>ROLLBACK</code> finish them, and the next SQL statement starts a new one.
+Setting autocommit back to <code>1</code> commits pending work. The default is autocommit.
+<code>SET [SESSION] TRANSACTION ISOLATION LEVEL READ COMMITTED</code> is accepted; other
+isolation levels and unsupported settings return errors. DDL follows SlopDB&#39;s
+transactional behavior and does not implicitly commit an explicit transaction.</p>
+<p>Replicated commits include <code>slopdb_commit_position</code> in the OK packet&#39;s info
+field and, when <code>CLIENT_SESSION_TRACK</code> is negotiated, its system-variable state
+block. <code>SHOW LAST COMMIT POSITION</code>, <code>SHOW REPLICATION POSITION</code> and prepared
+<code>WAIT FOR POSITION ? TIMEOUT ?</code> expose the same logical-position workflow.
+See <a href="replication.html#logical-commit-positions-and-causal-waits">logical commit positions</a>.
+The framing follows the <a href="https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_ok_packet.html">MySQL OK packet specification</a>.</p>
+<p><code>SET READ BARRIER PREVIOUS</code> / <code>NEXT</code> select certified historical data for reads;
+<code>DEFAULT</code> restores the node default and <code>COMMITTED</code> restores ordinary admission.
+See <a href="replication.html#reading-durable-barriers">durable read barriers</a>.</p>
+<p>Basic client helpers include <code>SHOW DATABASES</code>, <code>SELECT DATABASE()</code>,
+<code>SELECT VERSION()</code>, <code>SELECT CONNECTION_ID()</code>, <code>SELECT @@autocommit</code>, and
+<code>SET NAMES utf8</code> / <code>utf8mb3</code> / <code>utf8mb4</code>. Other queries run through the SlopDB SQL
+engine, including its existing <code>SHOW</code>, <code>DESCRIBE</code> and introspection support.
+MySQL system schemas and general <code>@@</code> variables are not emulated.</p>
+<p>Prepared parameters use anonymous <code>?</code> placeholders. Result metadata is sent at
+execution; prepare reports parameter metadata and no result columns. Clients
+that require result metadata before execution are not supported. Statements
+are never executed to discover metadata during prepare. MySQL cursors, multiple
+statements in a single query, multiple result sets, compression, replication,
+LOCAL INFILE, stored procedures, and administrative MySQL commands are not
+implemented or advertised. Unsupported commands return protocol errors.</p>
+<p>SlopDB validates stored column types. MySQL wire string parameters bind as TEXT;
+wire BLOB parameters bind as BLOB. Some drivers, including Go&#39;s MySQL driver,
+encode both strings and byte slices as wire strings. Use <code>CAST(? AS BLOB)</code> for
+BLOB assignments with those drivers, including empty byte slices. SQL BLOB
+literals such as <code>X&#39;00ff&#39;</code> also work. Unsigned parameters above <code>MaxInt64</code> are
+rejected, consistent with SlopDB&#39;s native integer range. REAL values retain
+float64 precision on the wire. Mixed-type expression columns use a string wire
+type to preserve their values without rounding large integers.</p>
+<h2 id="go-clients-and-embedding">Go clients and embedding</h2>
+<p>A standard MySQL driver can connect with a DSN such as:</p>
+<pre><code class="language-text">slopdb@tcp(127.0.0.1:3306)/slopdb
+slopdb@unix(/tmp/slopdb.sock)/slopdb
+</code></pre>
+<p>For embedding, package <code>slopdb/mysqlserver</code> accepts caller-created listeners:</p>
+<pre><code class="language-go">server, err := mysqlserver.New(database, mysqlserver.Config{
+    Username: &quot;app&quot;, Password: password, Database: &quot;app&quot;,
+})
+if err != nil { return err }
+defer server.Close()
+listener, err := net.Listen(&quot;tcp&quot;, &quot;127.0.0.1:3306&quot;)
+if err != nil { return err }
+return server.Serve(listener)
+</code></pre>
+<p>Call <code>Serve</code> concurrently with separate TCP and Unix listeners to expose both.
+<code>Server.Close</code> closes its listeners and clients and waits for session cleanup;
+the caller then closes the database and checks its flush error. The caller
+controls Unix socket permissions when embedding. Default limits are 64 MiB per
+incoming logical packet or accumulated long parameters, 1,024 prepared statements
+per connection, and 10 seconds to authenticate. <code>mysqlserver.Config</code> can override
+these limits.</p>
+<p>Embedded servers enable TLS with <code>mysqlserver.Config.TLSConfig</code>, a <code>*tls.Config</code>
+containing server certificates, and can set <code>RequireTLS: true</code>. For mutual TLS,
+set <code>TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert</code> and set
+<code>TLSConfig.ClientCAs</code> to an explicit <code>x509.CertPool</code>. This automatically requires
+TLS, even when <code>RequireTLS</code> is false. <code>New</code> clones the TLS configuration and CA
+pool and enforces a minimum of TLS 1.2. <code>GetConfigForClient</code> is unsupported so
+dynamic configurations cannot override the verification policy; use
+<code>GetCertificate</code> for certificate selection. Embedded servers retain their
+database&#39;s existing SQL quoting options.</p>
+<p>Protocol layout references: MySQL&#39;s <a href="https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_ssl_request.html">TLS upgrade</a>,
+<a href="https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake_v10.html">connection handshake</a>,
+<a href="https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html">prepared execution</a>,
+and <a href="https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_binary_resultset.html">binary result sets</a>.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/mysql-server.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

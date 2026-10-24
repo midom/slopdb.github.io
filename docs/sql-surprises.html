@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SQL behavior to check when results are unexpected — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>SQL behavior to check when results are unexpected — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html" aria-current="page">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SQL BEHAVIOR TO CHECK WHEN RESULTS ARE UNEXPECTED</p><h1 id="sql-behavior-to-check-when-results-are-unexpected">SQL behavior to check when results are unexpected</h1>
+<p>These examples use a fresh database. They are covered by
+<code>TestDocumentedSQLSurprises</code> in <code>tests/regression/sql_surprises_test.go</code>.
+See <a href="sql-semantics.html">SQL semantics</a> for the full rules and
+<a href="application-operations.html#explaining-a-slow-query">query troubleshooting</a>
+for inspecting access paths.</p>
+<h2 id="null-is-an-unknown-value">NULL is an unknown value</h2>
+<p><code>NULL = NULL</code> returns NULL. Test missing values with <code>IS NULL</code>.
+WHERE includes only TRUE rows, so both FALSE and NULL are filtered out.</p>
+<pre><code class="language-sql">SELECT NULL = NULL AS equality, NULL IS NULL AS missing;
+</code></pre>
+<p>The result is <code>equality = NULL</code>, <code>missing = 1</code>. A NULL in a <code>NOT IN</code> list
+also makes a nonmatching result unknown:</p>
+<pre><code class="language-sql">SELECT 2 NOT IN (1, NULL) AS excluded;
+</code></pre>
+<p>The result is NULL. When the list comes from a table, use a correlated
+<code>NOT EXISTS</code> to test whether a matching row exists, or explicitly exclude NULLs
+from the subquery when that matches the intended meaning.</p>
+<h2 id="left-join-filters-can-remove-unmatched-rows">LEFT JOIN filters can remove unmatched rows</h2>
+<pre><code class="language-sql">CREATE TABLE customers(id INTEGER PRIMARY KEY);
+CREATE TABLE orders(id INTEGER PRIMARY KEY, customer_id INTEGER, paid INTEGER);
+INSERT INTO customers VALUES(1),(2);
+INSERT INTO orders VALUES(10,1,1);
+SELECT c.id AS customer_id, o.id AS order_id FROM customers c
+LEFT JOIN orders o ON o.customer_id=c.id AND o.paid=1 ORDER BY c.id;
+</code></pre>
+<p>This returns <code>(1, 10)</code> and <code>(2, NULL)</code>. Moving <code>o.paid=1</code> from ON into
+WHERE removes customer 2 because its missing order has <code>paid = NULL</code>.
+Keep the filter in ON when unmatched customers should remain.</p>
+<h2 id="integer-division-and-numeric-conversions-are-explicit">Integer division and numeric conversions are explicit</h2>
+<pre><code class="language-sql">SELECT 5/2 AS integer_ratio, CAST(5 AS REAL)/2 AS real_ratio;
+</code></pre>
+<p>The results are <code>2</code> and <code>2.5</code>. Cast an operand to REAL when a fractional
+result is intended. Division by zero, overflowing INTEGER arithmetic and
+<code>CAST(&#39;oops&#39; AS INTEGER)</code> return errors. Invalid expressions such as unknown
+column names and unsupported functions are rejected even on empty inputs.</p>
+<h2 id="unique-and-check-treat-null-differently-from-not-null">UNIQUE and CHECK treat NULL differently from NOT NULL</h2>
+<pre><code class="language-sql">CREATE TABLE readings(id INTEGER PRIMARY KEY, value INTEGER UNIQUE CHECK(value&gt;0));
+INSERT INTO readings VALUES(1,NULL),(2,NULL);
+</code></pre>
+<p>Both rows are accepted: UNIQUE permits multiple NULLs and CHECK accepts an
+unknown result. Declare <code>value INTEGER NOT NULL UNIQUE CHECK(value&gt;0)</code> when
+missing values should be rejected. Every PRIMARY KEY component is already
+NOT NULL; an explicit NULL never requests an AUTOINCREMENT value. Omit that
+column to generate an ID.</p>
+<h2 id="text-equality-depends-on-the-database-collation">Text equality depends on the database collation</h2>
+<pre><code class="language-sql">PRAGMA collation=&#39;NFKC_CI&#39;;
+SELECT &#39;Ａ&#39;=&#39;a&#39; AS folded, BINARY &#39;Ａ&#39;=&#39;a&#39; AS bytewise;
+</code></pre>
+<p>The results are <code>1</code> and <code>0</code>. NFKC applies compatibility normalization and
+<code>_CI</code> applies case folding. BINARY compares the original bytes. Changing the
+database collation rebuilds indexes and can fail when formerly distinct
+PRIMARY KEY or UNIQUE values become equal. Stored strings keep their original
+bytes. See <a href="text-collation.html">text collation</a> for canonical versus compatibility
+equivalence and invalid UTF-8 behavior.</p>
+<h2 id="varchar-limits-count-stored-code-points">VARCHAR limits count stored code points</h2>
+<pre><code class="language-sql">CREATE TABLE names(id INTEGER PRIMARY KEY, name VARCHAR(1));
+INSERT INTO names VALUES(1,&#39;é&#39;);
+</code></pre>
+<p>The precomposed character is one code point and fits. An <code>e</code> followed by
+a combining acute accent is two code points and fails this limit, even when
+the active collation considers the strings equal. VARBINARY limits count bytes.
+Limits reject oversized writes rather than truncating them. <code>ALLOW EXISTING</code>
+on a length shrink preserves older values; new assignments must meet the
+new limit. See <a href="alter-table.html">ALTER table</a>.</p>
+<h2 id="ordering-and-transaction-visibility-need-explicit-choices">Ordering and transaction visibility need explicit choices</h2>
+<p>Without ORDER BY, SQL does not promise row order. A LIMIT without ORDER BY
+does not pick a stable page. Order by a unique key to break ties when paginating.</p>
+<p>SlopDB uses READ COMMITTED: each statement gets a fresh snapshot plus the
+transaction&#39;s own writes. Repeating a SELECT within one transaction can see
+another session&#39;s newly committed rows. Use a locking read when concurrent
+modification must wait, and close streaming results promptly because they pin
+their statement snapshot. <a href="prepared-statements.html">Prepared statements</a> and
+<a href="application-operations.html">application operations</a> cover those APIs.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/sql-surprises.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

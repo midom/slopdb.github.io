@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Prepared statements — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Prepared statements — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html" aria-current="page">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / PREPARED STATEMENTS</p><h1 id="prepared-statements">Prepared statements</h1>
+<p><code>Database.Prepare</code> parses one SQL statement once. Use anonymous <code>?</code> placeholders
+for values, including <code>LIMIT</code> and <code>OFFSET</code>. Executions bind typed values into
+private reusable ASTs and skip SQL tokenization and parsing. Eligible statements
+also reuse validated column bindings, primary-key lookup recipes, update target
+and affected-index bindings, tuple-range predicate and index-coverage templates,
+and typed aggregate instruction programs.</p>
+<p>Each execution rebuilds physical keys and scan bounds from its private arguments
+and evaluates access costs against current statistics. Catalog and statistics
+changes invalidate compiled metadata; local transaction DDL and rollback are
+also recognized. Row data, query results, locks, snapshots and iterators are never
+cached. Joins, subqueries and unsupported operator shapes continue through the
+ordinary planner and executor.</p>
+<p><code>Stmt.PlanStats()</code> reports lifetime <code>Builds</code> and <code>Hits</code>. Each pooled execution tree
+owns its mutable programs exclusively, so concurrent executions can build more
+than one template without sharing registers or parameter cells. Pool eviction
+can also cause a rebuild. These counters describe structure reuse, not result
+cache hits or a promise that a particular physical index will always be chosen.</p>
+<pre><code class="language-go">stmt, err := database.Prepare(&quot;SELECT balance FROM customer WHERE w_id=? AND d_id=? AND c_id=?&quot;)
+if err != nil {
+    return err
+}
+defer stmt.Close()
+
+result, err := stmt.ExecContext(ctx, 1, 2, 3)
+</code></pre>
+<p>A statement prepared on a database can be shared concurrently across its
+sessions and transactions. Execute it on a transaction to use that transaction&#39;s
+locks and private writes:</p>
+<pre><code class="language-go">update, err := database.Prepare(&quot;UPDATE stock SET quantity=quantity-? WHERE w_id=? AND i_id=?&quot;)
+if err != nil {
+    return err
+}
+defer update.Close()
+
+tx, err := database.BeginContext(ctx)
+if err != nil {
+    return err
+}
+defer tx.Rollback()
+if _, err = tx.ExecPreparedContext(ctx, update, 5, 1, 42); err != nil {
+    return err
+}
+return tx.Commit()
+</code></pre>
+<p><code>Session.Prepare</code> and <code>Tx.Prepare</code> bind the statement to that session or
+transaction; their statement&#39;s <code>Exec</code> methods execute there. A bound statement
+cannot be moved to another session or used after the original context closes.
+Database-prepared statements can be passed to <code>Session.ExecPrepared</code> or
+<code>Tx.ExecPrepared</code>, but cannot be moved to another database. The context variants
+are <code>PrepareContext</code>, <code>ExecContext</code>, and <code>ExecPreparedContext</code>. Per-call timeout
+settings are available through <code>Stmt.ExecWithOptions</code>,
+<code>Stmt.ExecContextWithOptions</code>, and session/transaction
+<code>ExecPreparedContextWithOptions</code>.</p>
+<p><code>Stmt.NumInput</code> reports the required argument count. Bindings accept signed Go
+integers, unsigned integers up to <code>MaxInt64</code>, finite floating-point values,
+strings, booleans (SQL integer 0/1), <code>[]byte</code> blobs, <code>sql.Value</code>, and <code>nil</code> for
+SQL NULL. Blob arguments are copied. A nil <code>[]byte</code> binds NULL; an empty non-nil
+slice binds an empty blob. Wrong argument counts, unsupported values,
+non-finite reals, and integers outside the signed 64-bit range fail before SQL
+execution. SQL text inside a string argument remains data.</p>
+<p>Parameters stand for expressions, not identifiers, aliases, SQL fragments, or
+persistent schema definitions. Named and numbered parameters are not supported.
+Multi-statement strings are rejected by Prepare. Parameterized schema
+statements (including defaults, checks, views, and triggers) are rejected;
+constant schema statements can still be prepared and reused. A bound integer
+in <code>ORDER BY ?</code> or <code>GROUP BY ?</code> is a constant expression, not a column ordinal.</p>
+<p><code>Close</code> is idempotent and rejects new executions with <code>db.ErrStmtClosed</code>; an
+already-started execution may finish. Closing a statement does not close its
+session or roll back its transaction.</p>
+<h2 id="reuse-select-result-buffers">Reuse SELECT result buffers</h2>
+<p><code>Session.ExecPreparedInto</code> lets a reader reuse its own result buffers:</p>
+<pre><code class="language-go">var result db.ExecResult
+for _, id := range ids {
+    _, err := session.ExecPreparedInto(&amp;result, stmt, id)
+    if err != nil {
+        return err
+    }
+    // Consume this result before the next call that uses result.
+    consume(result.Rows)
+}
+</code></pre>
+<p>A prepared point SELECT reuses the column slice, row map, and BLOB capacity.
+The caller gives up all old contents on entry. Do not retain aliases to these
+buffers across calls or share a destination between concurrent readers.
+Use one destination per reader. On error, its contents are unspecified.
+Other query shapes and writes use their normal executor and replace the result.
+Cancellation, statement snapshots, transaction rules, and validation are the
+same as for <code>ExecPrepared</code>. Context and per-call options are available through
+<code>ExecPreparedContextInto</code> and <code>ExecPreparedContextWithOptionsInto</code>.</p>
+<p>The ordinary API continues to return independent results that can be retained.
+Point SELECTs decode only columns needed by the projection and WHERE predicate,
+so an unselected text or BLOB field is not copied.</p>
+<p>Prepared plan counters use 128 independent counter shards. A private bound AST
+gets its shard when it is created and keeps it through metadata invalidation.
+The hot query path does not update a global counter. <code>PlanStats</code> sums the shards;
+totals are exact when executions are idle. A read during execution can observe
+increments from different moments, as with the previous separate counters.</p>
+<h2 id="64-bit-pagination">64-bit pagination</h2>
+<p>SELECT, compound SELECT, UPDATE, and DELETE store both <code>Limit</code> and <code>Offset</code> as
+explicit <code>int64</code> fields. Text literals and prepared arguments support the full
+signed 64-bit range; out-of-range literals and arguments are rejected rather
+than narrowed to the platform&#39;s <code>int</code>. A bound LIMIT/OFFSET value must be an
+integer, not NULL, a string, or a real. Negative LIMIT retains the existing
+unlimited convention; negative OFFSET becomes zero.</p>
+<p>Scan windows saturate <code>LIMIT + OFFSET</code> at <code>MaxInt64</code> to prevent overflow. Result
+slicing converts an offset or limit to a native index only after comparing it
+with the actual slice length. Large pagination values do not cause a
+proportional preallocation. Explicit <code>int64</code> AST fields change source
+compatibility for code constructing ASTs with native <code>int</code> variables; convert
+those fields with <code>int64(value)</code>.</p>
+<h2 id="tpc-c-inspired-tester">TPC-C-inspired tester</h2>
+<p>The tester now defaults to prepared statements. Every workload statement and
+stock-level IN-list arity is prepared before measurement; there is no fallback
+to parsing SQL during the prepared workload. Preparation duration and execution
+mode are recorded in JSON. Loading, preflight, accounting checks, and reopening
+remain outside the benchmark window. The prepared path uses a prepared COMMIT;
+the SQL text comparison uses the same workload templates, parameters,
+transaction order, and scale.</p>
+<pre><code class="language-sh">go run ./cmd/tpcc -workers 10 -duration 1m -json /tmp/slopdb-tpcc-prepared-results.json
+go run ./cmd/tpcc -workers 10 -duration 1m -prepared=false -json /tmp/slopdb-tpcc-text-results.json
+</code></pre>
+<p>WAL stays enabled and WAL fsync remains disabled by default. This is a reduced,
+TPC-C-inspired workload, not a compliant TPC-C score.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/prepared-statements.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

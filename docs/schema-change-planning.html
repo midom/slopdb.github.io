@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Planning schema changes — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Planning schema changes — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html" aria-current="page">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / PLANNING SCHEMA CHANGES</p><h1 id="planning-schema-changes">Planning schema changes</h1>
+<p>Use SQL <code>EXPLAIN</code> or the CLI <code>.plan</code> command before changing a schema:</p>
+<pre><code class="language-text">EXPLAIN ALTER TABLE items ALTER COLUMN label TYPE VARCHAR(200);
+EXPLAIN CREATE INDEX items_label ON items(label);
+.plan DROP INDEX items_label
+</code></pre>
+<p>The command inspects the current catalog without executing the change or
+scanning stored rows. Each action has an output row describing its expected
+work, row scans, row rewrites, index rebuilding, and locking. It accepts
+ALTER TABLE/INDEX/VIEW and CREATE/DROP INDEX. <code>EXPLAIN ANALYZE</code> accepts queries
+only and does not execute schema changes.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>catalog-only</code></td>
+<td>Changes metadata without scanning or rewriting rows. This includes renames, defaults, and a VARCHAR/VARBINARY length increase with unchanged storage encoding. <code>ALLOW EXISTING</code> makes a shorter limit catalog-only too.</td>
+</tr>
+<tr>
+<td><code>online index build</code></td>
+<td>Builds an index from a snapshot while writers continue, then reconciles committed changes before publication.</td>
+</tr>
+<tr>
+<td><code>index build</code></td>
+<td>Builds an index inside an explicit transaction or atomic multi-action ALTER, holding the exclusive catalog lock.</td>
+</tr>
+<tr>
+<td><code>index rebuild</code></td>
+<td>Scans table rows and regenerates existing index entries.</td>
+</tr>
+<tr>
+<td><code>table rewrite</code></td>
+<td>Scans or rewrites rows and maintained indexes. Its cost grows with table size.</td>
+</tr>
+<tr>
+<td><code>database rewrite</code></td>
+<td>A collation change regenerates clustered and secondary keys across the database.</td>
+</tr>
+<tr>
+<td><code>no-op</code></td>
+<td>An IF EXISTS/IF NOT EXISTS condition makes this action unnecessary.</td>
+</tr>
+</tbody></table>
+</div><p>Online index creation uses a shared catalog lock while scanning and catching
+up, then an exclusive catalog lock for publication. Other ALTER actions take
+the exclusive catalog lock. Both lock modes can wait for conflicting active
+transactions; the plan describes this explicitly. Standalone index additions
+are online, while explicit transactions and multi-action ALTER retain their
+atomic transactional behavior.</p>
+<p>For standalone index changes, <code>KILL TRANSACTIONS AFTER &#39;250ms&#39;</code> requests
+cancellation and rollback of transactions blocking publication after the
+specified wait. <code>EXPLAIN</code> and <code>.plan</code> include that threshold in the locking and
+detail fields. The explanation only describes the policy; it does not cancel
+any transactions. The modifier is rejected for explicit transactions,
+multi-action ALTER, and schema changes other than index additions and drops.
+See <a href="online-indexes.html">online indexes</a> for SQL examples and the Go API option.</p>
+<p>A plan describes work from the current definition, including the column
+changes of earlier actions in the same ALTER. It does not reserve a lock,
+promise a duration, or validate every stored value and dependency. The actual
+statement still checks its constraints. Run the change separately when ready.</p>
+<p>For query work, use <code>EXPLAIN</code> and <code>EXPLAIN ANALYZE</code>. <a href="query-profiling.html">Query profiling</a>
+explains the estimates, actual reads, and timing fields.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/schema-change-planning.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

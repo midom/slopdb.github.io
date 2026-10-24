@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SlopDB is an embedded SQL database written in Go. Familiar SQL, concurrent transactions, MySQL and PostgreSQL protocol servers, and Raft replication.">
+  <meta name="theme-color" content="#f6f7f1">
+  <meta property="og:title" content="SlopDB — Serious SQL. A little slop.">
+  <meta property="og:description" content="An SQL database written in Go. Run embedded, in the CLI, as a server, or as a replicated Raft cluster.">
+  <meta property="og:type" content="website">
+  <title>SlopDB — Serious SQL. A little slop.</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header wrap">
+    <a class="brand" href="./" aria-label="SlopDB home"><img src="assets/logo.svg" width="151" height="40" alt="slopdb"></a>
+    <nav aria-label="Main navigation"><a href="#features">Features</a><a href="#connect">Run it</a><a href="#replication">Replication</a><a href="docs/">Docs <span aria-hidden="true">↗</span></a></nav>
+    <a class="github-link" href="https://github.com/midom/slopdb"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.58 9.58 0 0 1 12 6.82c.85 0 1.71.11 2.51.34 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg><span>GitHub</span><span aria-hidden="true">↗</span></a>
+  </header>
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="status-dot"></span> EMBEDDED SQL. WRITTEN IN GO.</div>
+        <h1 id="hero-title">Serious SQL.<br>A little <span class="slop-word">slop.<svg viewBox="0 0 270 19" aria-hidden="true"><path d="M4 11Q120-3 262 9"/></svg></span></h1>
+        <p class="hero-description">Familiar SQL, concurrent transactions, and durable storage. Embed it in Go, open a shell, serve SQL, or grow into a replicated Raft cluster.</p>
+        <div class="hero-actions"><a class="button primary" href="#start">Get your hands dirty <span aria-hidden="true">↗</span></a><a class="text-link" href="docs/">Read the docs <span aria-hidden="true">→</span></a></div>
+        <p class="hero-note">Open source <span>·</span> Apache 2.0 <span>·</span> No external server required</p>
+      </div>
+      <div class="hero-visual">
+        <div class="terminal-label"><span class="tiny-cross">+</span> LESS SETUP. MORE BUILDING.</div>
+        <div class="terminal">
+          <div class="terminal-bar"><div class="window-dots"><i></i><i></i><i></i></div><span>hello, slopdb</span><span class="terminal-type">SQL</span></div>
+          <div class="terminal-content"><div class="terminal-command"><span>$</span> ./slopdb ./ideas</div><div class="code-block"><code><span class="syntax">CREATE TABLE</span> ideas (<br>  id <span class="syntax">INTEGER PRIMARY KEY</span>,<br>  name <span class="syntax">TEXT NOT NULL</span>,<br>  shipped <span class="syntax">INTEGER DEFAULT</span> <span class="number">0</span><br>);<br><br><span class="syntax">INSERT INTO</span> ideas (id, name)<br><span class="syntax">VALUES</span> (<span class="number">1</span>, <span class="string">'the next big thing'</span>);<br><br><span class="syntax">SELECT</span> name <span class="syntax">FROM</span> ideas;</code></div>
+            <div class="query-result"><span class="result-heading">name</span><span>the next big thing</span><span class="result-count">1 row returned <span>✓</span></span></div>
+            <div class="terminal-prompt"><span>slopdb&gt;</span><span class="cursor"></span></div>
+          </div>
+        </div>
+        <div class="terminal-caption"><span>YOUR DATA. YOUR DIRECTORY.</span><span class="handwritten">just add ideas. <span aria-hidden="true">↖</span></span></div>
+      </div>
+    </section>
+    <div class="principles wrap" aria-label="At a glance"><span><i aria-hidden="true">⌘</i> Native Go engine</span><span><i aria-hidden="true">↔</i> Concurrent sessions</span><span><i aria-hidden="true">▤</i> WAL &amp; crash recovery</span><span><i aria-hidden="true">⋈</i> Raft replication</span></div>
+    <section class="modes-section wrap" id="connect" aria-labelledby="connect-title">
+      <div class="section-heading modes-heading"><div><p class="eyebrow">01 / FOUR WAYS TO RUN IT</p><h2 id="connect-title">In your app. On your terms.</h2></div><p>Start with an embedded database.<br>Open a shell, serve SQL, or bring a cluster online.</p></div>
+      <div class="deployment-grid">
+        <article class="deployment-card" aria-labelledby="embedded-title">
+          <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">{ }</span><span class="mode-label">IN PROCESS</span><h3 id="embedded-title">Embedded</h3><p>Link the Go engine directly into your application. Your process, your database directory.</p></div>
+          <div class="deployment-code"><div class="mode-code-heading"><span>GO · IN THE SLOPDB MODULE</span><button class="copy-button" data-copy="go-code" aria-label="Copy embedded Go example">Copy <span aria-hidden="true">⧉</span></button></div><pre><code id="go-code"><span class="syntax">package</span> main
+
+<span class="syntax">import</span> (
+    <span class="string">"log"</span>
+    <span class="string">"slopdb/db"</span>
+)
+
+<span class="syntax">func</span> main() {
+    d, err := db.Open(<span class="string">"./ideas"</span>, nil)
+    <span class="syntax">if</span> err != nil { log.Fatal(err) }
+    _, err = d.Exec(<span class="string">"SELECT 1"</span>)
+    closeErr := d.Close()
+    <span class="syntax">if</span> err != nil { log.Fatal(err) }
+    <span class="syntax">if</span> closeErr != nil {
+        log.Fatal(closeErr)
+    }
+}</code></pre></div>
+          <div class="deployment-card-footer"><span>No separate server process</span><a href="docs/prepared-statements.html">Go API guide <span aria-hidden="true">↗</span></a></div>
+        </article>
+        <article class="deployment-card" aria-labelledby="cli-title">
+          <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">&gt;_</span><span class="mode-label">AT THE PROMPT</span><h3 id="cli-title">CLI</h3><p>Explore your data interactively, inspect a schema, or run a SQL file from your terminal.</p></div>
+          <div class="deployment-code"><div class="mode-code-heading"><span>TERMINAL</span><button class="copy-button" data-copy="cli-code" aria-label="Copy CLI example">Copy <span aria-hidden="true">⧉</span></button></div><pre><code id="cli-code"><span class="comment"># Build from the repository root</span>
+go build -o slopdb .
+
+<span class="comment"># Open an interactive SQL prompt</span>
+./slopdb ./ideas
+
+<span class="comment"># Or run a SQL file</span>
+./slopdb ./ideas &lt; queries.sql</code></pre></div>
+          <div class="deployment-card-footer"><span>A directory and a SQL prompt</span><a href="docs/getting-started.html">CLI guide <span aria-hidden="true">↗</span></a></div>
+        </article>
+        <article class="deployment-card" aria-labelledby="server-title">
+          <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">↔</span><span class="mode-label">OVER THE WIRE</span><h3 id="server-title">Server</h3><p>Connect applications and tools through a MySQL or PostgreSQL protocol listener.</p></div>
+          <div class="deployment-code"><div class="mode-code-heading"><span>CHOOSE A SQL LISTENER</span><button class="copy-button" data-copy="server-code" aria-label="Copy server examples">Copy <span aria-hidden="true">⧉</span></button></div><pre><code id="server-code"><span class="comment"># MySQL protocol</span>
+./slopdb \
+  --mysql-tcp 127.0.0.1:3306 \
+  ./ideas
+
+<span class="comment"># Or PostgreSQL protocol</span>
+./slopdb \
+  --postgres-tcp 127.0.0.1:5432 \
+  ./ideas</code></pre></div>
+          <div class="deployment-card-footer"><span>TCP or Unix sockets · TLS available</span><div class="mode-guide-links"><a href="docs/mysql-server.html">MySQL <span aria-hidden="true">↗</span></a><a href="docs/postgres-server.html">PostgreSQL <span aria-hidden="true">↗</span></a></div></div>
+        </article>
+        <article class="deployment-card raft-card" aria-labelledby="raft-title">
+          <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">⋈</span><span class="mode-label">ACROSS NODES</span><h3 id="raft-title">Raft cluster</h3><p>Replicate the database with leader-based writes, durable quorum commits, and automatic elections.</p></div>
+          <div class="deployment-code"><div class="mode-code-heading"><span>BOOTSTRAP THE FIRST NODE</span><button class="copy-button" data-copy="raft-code" aria-label="Copy Raft bootstrap example">Copy <span aria-hidden="true">⧉</span></button></div><pre><code id="raft-code"><span class="comment"># Set a shared cluster secret</span>
+export SLOPDB_RAFT_TOKEN=\
+  'replace-with-a-long-random-secret'
+
+<span class="comment"># Start the first member</span>
+./slopdb --raft-id n1 \
+  --raft-bootstrap \
+  --raft-listen \
+    tcp://127.0.0.1:9400 \
+  --raft-control \
+    tcp://127.0.0.1:9401 \
+  --raft-token-env \
+    SLOPDB_RAFT_TOKEN \
+  --mysql-tcp 127.0.0.1:3306 \
+  ./node-1</code></pre></div>
+          <div class="deployment-card-footer"><span>Next: wait for readiness, join n2 + n3</span><a href="docs/replication.html#start-a-cluster">Build a cluster <span aria-hidden="true">↗</span></a></div>
+        </article>
+      </div>
+      <p class="deployment-note">Examples assume a build from the repository root. Server snippets are alternatives; each database directory has one owning process. See the protocol guides for SQL compatibility and authentication.</p>
+    </section>
+    <section class="replication-section" id="replication" aria-labelledby="replication-title">
+      <div class="wrap">
+        <div class="replication-heading"><div><p class="eyebrow">02 / BUILT TO REPLICATE</p><h2 id="replication-title">A little slop.<br>A proper quorum.</h2></div><div class="replication-intro"><p>Take the same SQL engine across nodes with HashiCorp Raft. New members clone a snapshot, catch up as learners, and become voters after validated catch-up.</p><a class="button primary" href="docs/replication.html">Explore Raft replication <span aria-hidden="true">↗</span></a></div></div>
+        <div class="replication-body">
+          <figure class="cluster-diagram">
+            <div class="cluster-diagram-label"><span><span class="status-dot"></span> THREE-VOTER TOPOLOGY</span><span>SYNC MODE</span></div>
+            <div class="cluster-client"><span>YOUR APPLICATION</span><span class="client-protocol">MySQL / PostgreSQL</span></div>
+            <div class="client-connection"><span aria-hidden="true">↓</span><span>SQL TO THE READY LEADER</span></div>
+            <div class="cluster-node cluster-leader"><span class="node-id">N1</span><div><strong>Leader</strong><span>SQL reads &amp; writes</span></div><span class="node-vote">VOTER</span></div>
+            <div class="replication-fan"><span>NATIVE WAL REPLICATION</span><div aria-hidden="true"></div></div>
+            <div class="cluster-followers"><div class="cluster-node"><span class="node-id">N2</span><div><strong>Follower</strong><span>Applies replicated data</span></div></div><div class="cluster-node"><span class="node-id">N3</span><div><strong>Follower</strong><span>Applies replicated data</span></div></div></div>
+            <div class="quorum-caption"><span class="quorum-badge">2 OF 3</span><p>A voting majority durably stores the Raft entry.<br>The leader durably applies it before acknowledging.</p></div>
+            <figcaption>Illustrative steady-state cluster. Followers apply asynchronously; writes require the ready leader.</figcaption>
+          </figure>
+          <div class="replication-details">
+            <article><span class="replication-detail-number">01</span><div><h3>Durable by default.</h3><p>Sync mode waits for durable storage on a voting majority and durable application on the leader. A three-voter cluster can continue with one voter unavailable.</p></div></article>
+            <article><span class="replication-detail-number">02</span><div><h3>Replicas with a role.</h3><p>Full voters can lead. Permanent non-voting replicas keep data without changing the quorum. Logs-only voters participate in consensus without materializing SQL tables.</p></div></article>
+            <article><span class="replication-detail-number">03</span><div><h3>Choose how reads catch up.</h3><p>SQL goes to the ready leader by default. Opt replicas into bounded-staleness or durable-barrier reads, with commit-position tokens to coordinate visibility.</p></div></article>
+            <a class="replication-text-link" href="docs/replication.html#replica-roles">Replica roles, read consistency, and cluster operations <span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="section wrap" id="features" aria-labelledby="features-title">
+      <div class="section-heading"><div><p class="eyebrow">03 / UNDER THE SLIME</p><h2 id="features-title">Playful name.<br>Proper database.</h2></div><p>Everything starts with a dependable foundation.<br>Then you make something interesting.</p></div>
+      <div class="feature-grid">
+        <article class="feature"><span class="feature-icon" aria-hidden="true">{ }</span><span class="feature-number">01</span><h3>SQL you already speak.</h3><p>A SQLite-like dialect with joins, CTEs, window functions, prepared statements, and the relational constraints your data deserves.</p><a href="docs/sql-semantics.html">Explore SQL support <span aria-hidden="true">↗</span></a><div class="feature-bottom"><code>SELECT * FROM possibilities;</code></div></article>
+        <article class="feature"><span class="feature-icon" aria-hidden="true">⇄</span><span class="feature-number">02</span><h3>Room for concurrency.</h3><p>Independent sessions, atomic transactions, savepoints, and locking reads. MVCC snapshots keep each statement’s view consistent.</p><a href="docs/prepared-statements.html">Build with transactions <span aria-hidden="true">↗</span></a><div class="feature-bottom"><span class="mini-lane">SESSION A <b>→</b> ━━━</span><span class="mini-lane">SESSION B <b>→</b> ━━━</span></div></article>
+        <article class="feature"><span class="feature-icon" aria-hidden="true">▤</span><span class="feature-number">03</span><h3>Built to hold onto it.</h3><p>A Go LSM storage engine with durable writes and crash recovery on by default. Add compression, online backups, or Raft replication as you need them.</p><a href="docs/application-operations.html">Look inside the engine <span aria-hidden="true">↗</span></a><div class="feature-bottom storage-layers"><span>MEMTABLE</span><span>WAL</span><span>SSTABLES</span></div></article>
+      </div>
+    </section>
+    <section class="section wrap start-section" id="start" aria-labelledby="start-title"><div><p class="eyebrow">04 / FROM ZERO TO QUERY</p><h2 id="start-title">A directory.<br>A database.<br><span class="muted">You’re in.</span></h2><p>Grab the source and build with Go 1.22.2 or newer.<br>Your first database is a few commands away.</p><a class="text-link" href="docs/getting-started.html">Follow the getting started guide <span aria-hidden="true">→</span></a></div><div class="start-commands"><div class="start-command-head"><span>YOUR TERMINAL</span><button class="copy-button" data-copy="start-code" aria-label="Copy installation commands">Copy commands <span aria-hidden="true">⧉</span></button></div><pre id="start-code"><code><span class="comment"># 01 — get the source</span>
+git clone https://github.com/midom/slopdb.git
+cd slopdb
+
+<span class="comment"># 02 — build it</span>
+go build -o slopdb .
+
+<span class="comment"># 03 — make a little space for your data</span>
+./slopdb ./example-db</code></pre><div class="start-command-footer"><span class="status-dot"></span> No external database engine. Just Go and your data.</div></div></section>
+    <section class="docs-section wrap" aria-labelledby="docs-title"><div class="docs-intro"><p class="eyebrow">KEEP DIGGING</p><h2 id="docs-title">Good things<br>under the surface.</h2><img src="assets/icon.svg" width="79" height="88" alt="" loading="lazy"></div><div class="doc-links"><a href="docs/"><div><h3>The documentation</h3><p>From your first query to backups and schema changes.</p></div><span aria-hidden="true">↗</span></a><a href="docs/replication.html"><div><h3>Take it further</h3><p>Explore Raft clusters, replica roles, and read consistency.</p></div><span aria-hidden="true">↗</span></a><a href="docs/testing.html"><div><h3>Show your work</h3><p>Tests, reference fixtures, and reproducible benchmarks.</p></div><span aria-hidden="true">↗</span></a></div></section>
+    <section class="closing wrap"><span class="eyebrow">SMALL STARTS. INTERESTING POSSIBILITIES.</span><h2>Put your ideas in the slop.</h2><a class="button primary" href="https://github.com/midom/slopdb">Explore on GitHub <span aria-hidden="true">↗</span></a><span class="closing-squiggle" aria-hidden="true">✳</span></section>
+  </main>
+  <footer class="site-footer wrap"><a class="brand" href="./" aria-label="SlopDB home"><img src="assets/logo.svg" width="130" height="35" alt="slopdb" loading="lazy"></a><p>An embedded SQL database. A little personality.</p><div><a href="docs/">Docs</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer>
+  <div class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

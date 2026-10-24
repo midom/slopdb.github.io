@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Small-row SELECTs with 100 concurrent readers — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Small-row SELECTs with 100 concurrent readers — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SMALL-ROW SELECTS WITH 100 CONCURRENT READERS</p><h1 id="small-row-selects-with-100-concurrent-readers">Small-row SELECTs with 100 concurrent readers</h1>
+<p>This is the initial optimization comparison. See the
+<a href="small-row-select-scaling.html">scaling follow-up</a> for the subsequent reader-view,
+lifecycle, allocation and 128-shard cache changes and their measurements.</p>
+<p>Measured on <code>test</code> on 2026-10-15: Linux ARM64, 60 Neoverse-N1 cores, approximately
+58 GiB RAM, Go 1.26.0 and <code>GOMAXPROCS=60</code>. The baseline is production source at
+<code>940d63d9ff30f1b8001417f663f0d65e3c3d97f3</code>, plus the new benchmark harness.
+The final build includes the optimizations described below. Exact source
+fingerprints, binary hashes, commands and all samples are retained with the
+<a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/select/2026-10-15/summary.json">comparison</a>.</p>
+<h2 id="fixture-and-method">Fixture and method</h2>
+<p>The existing mounted filesystem on <code>test</code> contained no seed. A new seed was
+created once at <code>/home/ubuntu/slopdb-small-row-10gb</code>, then reused throughout.
+It contains 39,062,500 rows of 256 logical bytes: two BIGINT columns and a
+240-byte deterministic pseudorandom BLOB. That is exactly 10,000,000,000 logical
+bytes, excluding encodings, keys and storage metadata. A full VACUUM produced
+1,226 L6 SSTables totaling 10,147,558,012 physical bytes. Every typed row was
+verified after reopening. The physical page target remains 4 KiB.</p>
+<p>The measured query is:</p>
+<pre><code class="language-sql">SELECT id,v,payload FROM small_rows WHERE id=?
+</code></pre>
+<p>Each of 100 independent sessions shares a prepared statement and draws uniform
+random primary keys using a separate deterministic PRNG. Every returned ID,
+value and BLOB is checked. Validation contributes to aggregate throughput;
+request latency covers the ExecPrepared call. Percentiles are histogram upper
+bounds with at most 6.25% bucket width.</p>
+<p>Each cache size gets a fresh process, 4,882,813 checked warmup probes at an
+eight-row stride, and three consecutive 30-second samples. Short final pages
+at SSTable boundaries can remain cold after warmup; cache hit/miss counters
+measure the actual behavior. Samples within one warmed process are descriptive
+observations, not independent fixture replications or statistical proof.</p>
+<p>Cache budgets use <strong>decimal bytes</strong>: 100 MB, 1 GB, 10 GB and 20 GB. Linux
+filesystem caching stays enabled and is never reset. These measurements expose
+engine cache misses, syscall and decompression costs with a warm filesystem;
+they do not measure cold physical-device random I/O. WAL remains enabled with
+WAL fsync disabled. Loading, compaction, verification, preparation, warmup and
+close are outside the timed samples. No other benchmark runs alongside them.</p>
+<p>The matrix hashes every SSTable before and after execution and rejects changes,
+query failures, incomplete samples, sequence changes and cache-budget violations.
+The baseline and final matrices must also have identical SSTable inventories.
+The final LRU and CLOCK matrices use one binary, in that order, with all four
+cache sizes run serially for each policy. The default remains LRU. The optimized
+LRU refreshes recency on sampled hits; it is not the baseline&#39;s every-hit LRU.</p>
+<h2 id="results">Results</h2>
+<p>Median checked SELECTs/s from three 30-second samples per configuration:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Decoded cache</th>
+<th align="right">Original baseline</th>
+<th align="right">Optimized LRU</th>
+<th align="right">CLOCK</th>
+<th align="right">CLOCK vs LRU</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100 MB</td>
+<td align="right">428,383</td>
+<td align="right">820,350</td>
+<td align="right">810,507</td>
+<td align="right">-1.2%</td>
+</tr>
+<tr>
+<td>1 GB</td>
+<td align="right">488,465</td>
+<td align="right">874,495</td>
+<td align="right">863,915</td>
+<td align="right">-1.2%</td>
+</tr>
+<tr>
+<td>10 GB</td>
+<td align="right">906,187</td>
+<td align="right">1,652,845</td>
+<td align="right">1,787,150</td>
+<td align="right">+8.1%</td>
+</tr>
+<tr>
+<td>20 GB</td>
+<td align="right">935,891</td>
+<td align="right">1,497,809</td>
+<td align="right">1,504,238</td>
+<td align="right">+0.4%</td>
+</tr>
+</tbody></table>
+</div><p>CLOCK improves the 10 GB case by 8.1% with effectively the same hit rate. Its
+median p99 upper bound also falls by 27.5%. The smaller caches show roughly 1.2%
+lower throughput with CLOCK; the fully fitting 20 GB cache shows similar
+throughput and latency. This one ordered uniform-read comparison supports
+keeping CLOCK selectable, with LRU still the default. It does not establish a
+general winner for other key distributions, scans or mixed writes.</p>
+<p>Median p99 upper bounds and whole-process peak RSS, including warmup:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Cache</th>
+<th align="right">Hit rate, both policies</th>
+<th align="right">LRU p99 µs</th>
+<th align="right">CLOCK p99 µs</th>
+<th align="right">LRU RSS GB</th>
+<th align="right">CLOCK RSS GB</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>100 MB</td>
+<td align="right">0.92%</td>
+<td align="right">1,376.3</td>
+<td align="right">1,441.8</td>
+<td align="right">0.526</td>
+<td align="right">0.526</td>
+</tr>
+<tr>
+<td>1 GB</td>
+<td align="right">9.25%</td>
+<td align="right">1,114.1</td>
+<td align="right">1,114.1</td>
+<td align="right">3.246</td>
+<td align="right">3.268</td>
+</tr>
+<tr>
+<td>10 GB</td>
+<td align="right">92.46%</td>
+<td align="right">655.4</td>
+<td align="right">475.1</td>
+<td align="right">29.310</td>
+<td align="right">29.299</td>
+</tr>
+<tr>
+<td>20 GB</td>
+<td align="right">100.00%</td>
+<td align="right">311.3</td>
+<td align="right">311.3</td>
+<td align="right">32.110</td>
+<td align="right">32.294</td>
+</tr>
+</tbody></table>
+</div><p>At 100 MB, optimized LRU uses 0.526 GB peak RSS versus 4.559 GB in the original
+baseline, and allocates about 8,575 bytes/query versus 15,411. At 20 GB, the
+decoded cache retains only 10.815 GB, while process RSS also includes cache
+metadata, decoder state, active results and Go heap headroom. A cache budget is
+not a process memory limit. The 20 GB runs have lower p99 but lower throughput
+than the 10 GB runs; the data does not show monotonic throughput with cache size.</p>
+<p>The source changes improve LRU throughput by 1.60–1.92× over the original
+baseline. CLOCK reaches 1.97× baseline throughput at 10 GB. Complete per-sample
+latencies, allocations, commands, fingerprints and inventory evidence are in the
+<a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/select/2026-10-15/summary.json">saved comparison</a>.</p>
+<h2 id="performance-findings-and-fixes">Performance findings and fixes</h2>
+<ol>
+<li><p><strong>Redundant projection maps and repeated metadata growth.</strong> Plain column
+SELECTs copied a decoded row into an expression input map and then another
+projected output map. Column metadata grew through several allocations.
+The executor now sizes metadata slices up front and keeps the owned decoded
+map for small unaliased, unqualified physical-table projections, pruning
+unselected fields only after filtering, sorting and locking. Joins, aliases,
+expressions, grouping and windows retain their general paths. Reference
+validation, residual predicates and transaction overlays remain intact.</p>
+</li>
+<li><p><strong>Decoder state multiplied by files and CPU count.</strong> Each SSTable retained
+<code>GOMAXPROCS</code> Zstd decoder states. The baseline 100 MB diagnostic profile
+attributed roughly 1.5 GiB of sampled in-use heap to decoder buffers and
+scratch, despite the much smaller page-cache budget. DecodeAll-only decoders
+are now borrowed from a shared <code>sync.Pool</code>, one per active decoding operation.
+They start no streaming goroutines or external resources; GC can discard idle
+states. Decoded results retain their own allocations and legacy frame/window
+formats remain readable.</p>
+</li>
+<li><p><strong>Transient encoded buffers on every cache miss.</strong> A compressed read allocated
+both encoded input and decoded output. Small encoded inputs now use bounded
+8 KiB scratch buffers after a reader observes compressed blocks. Raw-only
+files retain their allocation path. A raw page in a mixed-codec file is
+detached before scratch is returned. Large pages retain their previous path;
+checksum and decoding errors still propagate.</p>
+</li>
+<li><p><strong>Exclusive cache lookup and LRU updates.</strong> The baseline block profile
+attributed about 157 aggregate seconds of sampled waiting to cache lookup
+mutexes during a 15-second diagnostic. Immutable readers now use shared
+shard locks, atomic statistics and sampled LRU refreshes. A refresh rechecks
+membership under the writer lock, including concurrent eviction and close.
+The 16 shards and their exact byte budgets are unchanged.</p>
+</li>
+<li><p><strong>Allocation under the insertion lock.</strong> Once reads became faster, insertion
+became the main sampled cache wait. Steady-state eviction now reuses one
+victim&#39;s cache record and list node; additional victims are removed when a
+larger page requires them. This removes record/node allocation and possible
+GC assistance from that part of the writer critical section. Returned
+immutable readers keep their original data even when their old cache record
+is recycled.</p>
+</li>
+<li><p><strong>LRU writers for a completely fitting working set.</strong> A 20 GB intermediate
+run still refreshed LRU lists, queuing readers behind writer locks even
+though its entire 10.815 GB decoded working set fit. Shards now start
+maintaining sampled recency after their first eviction. In separate
+15-second diagnostics, aggregate sampled query blocking dropped from about
+475 seconds to 4.5 seconds, and the p99 upper bound fell from about 0.754 ms
+to 0.221 ms. This primarily fixes blocking and latency tails; it does not
+imply a matching throughput increase. Full-cache CPU profiles still show
+typed-key/block decoding, owned-result allocation and shared atomic reader
+bookkeeping. Required snapshot and lifecycle protection remains enabled.</p>
+</li>
+<li><p><strong>CLOCK comparison.</strong> <code>Options.BlockCachePolicy</code> now accepts <code>lru</code> or <code>clock</code>.
+CLOCK retains the same 16 independently locked shards and exact byte budgets.
+It sets a reference bit on point hits after admission pressure starts, then
+clears bits while advancing a shard-local hand to find a second-chance
+victim. Hits require no list writes or writer-lock upgrade. Scan lookups do
+not refresh reference bits. Both policies reuse victim records and skip
+global byte-counter updates when replacement leaves occupancy unchanged.
+Changing policies on reopen preserves the SSTables and logical data.
+In the separate 15-second 10 GB diagnostics, sampled cache blocking totals
+627 aggregate seconds for LRU over 20.77 million queries versus 539 seconds
+for CLOCK over 24.52 million queries: approximately 30.2 versus 22.0 µs of
+sampled waiting per query. These sums include concurrently waiting workers,
+not elapsed wall time. CLOCK removes hit-update writer waits; admission
+still needs exclusive shard locks and remains a cost under cache pressure.
+See the retained <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/select/2026-10-15/profile-policy-lru-10000000000-block.txt">LRU</a>
+and <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/select/2026-10-15/profile-policy-clock-10000000000-block.txt">CLOCK</a>
+block profiles. Their profiled throughput is excluded from the results.</p>
+</li>
+</ol>
+<p>Profiles are diagnostic and add overhead; none of their throughput values are
+used in the result table. Final policy profiles run serially after both matrices
+and use separate output paths. Intermediate optimization matrices are retained
+as diagnostic artifacts and excluded from the final comparison.</p>
+<h2 id="validation-and-reproduction">Validation and reproduction</h2>
+<p>Permanent tests cover 100 concurrent prepared readers, BLOB/map/column metadata
+ownership, residual predicates, hidden sorting fields, aliases, private writes
+and rollback. Storage tests cover cache counters and budgets, sampled touches,
+multi-victim eviction, immutable reader lifetime during record reuse, concurrent
+close, mixed raw/compressed pages, malformed frames, checksums and reuse after
+errors. Tests create database and file artifacts with <code>t.TempDir()</code>.
+CLOCK tests additionally cover second chances, scan reads, variable-size
+multi-victim eviction, concurrent byte accounting and close, invalid policy
+rejection before database creation, and policy changes on reopen. The checked
+benchmark harness&#39;s small seed/reuse test runs both policies.</p>
+<p>The root module is also checked with Go 1.22.2 using <code>go build -o slopdb .</code>,
+<code>go test ./... -count=1 -timeout 10m</code>,
+<code>go test -race ./... -count=1 -timeout 10m</code>, <code>go vet ./...</code> and
+<code>git diff --check</code>. Timings are not test thresholds.</p>
+<p>See the <a href="https://github.com/midom/slopdb/blob/main/cmd/select-bench/README.md">benchmark command documentation</a>.
+Raw reports, profiles, logs, resources and full inventories remain on <code>test</code>
+under <code>/home/ubuntu/slopdb-bench/select-20261015/</code>; use <code>before/</code>, <code>policy-lru/</code>
+and <code>policy-clock/</code>. The earlier <code>final/</code> is the completed LRU run before the
+selectable-policy comparison.
+The reusable database remains under the user&#39;s home directory.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/small-row-select-performance.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

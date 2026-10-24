@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SQL quoting options — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>SQL quoting options — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html" aria-current="page">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SQL QUOTING OPTIONS</p><h1 id="sql-quoting-options">SQL quoting options</h1>
+<p>SlopDB keeps its existing quoting rules by default: single quotes delimit strings,
+double quotes delimit identifiers, and backslashes in strings remain literal.
+Backticks and square brackets can also delimit identifiers.</p>
+<p>Enable MySQL default quoting when opening the database:</p>
+<pre><code class="language-sh">./slopdb --mysql-quoting ./example-db
+</code></pre>
+<pre><code class="language-go">options := storage.DefaultOptions()
+options.MySQLQuoting = true
+database, err := db.Open(&quot;./example-db&quot;, options)
+</code></pre>
+<p>The option applies to SQL execution, preparation and streaming queries through
+<code>Database</code>, <code>Session</code>, and <code>Tx</code>. It is copied at <code>Open</code> and remains fixed for that
+open database. Choose it again when reopening; it is not a persisted database
+setting. <code>.open</code> in the CLI carries the selected option to the next database,
+and <code>.status</code> displays it.</p>
+<p>With the option enabled, both single and double quotes delimit strings. Use
+backticks for identifiers, doubling an embedded backtick. Existing square-bracket
+identifier quoting remains available. Quotes can also be doubled inside strings.
+Adjacent string literals concatenate, and SELECT aliases can use string quotes.</p>
+<pre><code class="language-sql">CREATE TABLE `orders` (`id` INTEGER PRIMARY KEY, `note` TEXT);
+INSERT INTO `orders` VALUES (1, &quot;Customer said \&quot;hello\&quot;; delivered\n&quot;);
+SELECT `note`, &quot;string literal&quot; AS &quot;label&quot; FROM `orders`;
+SELECT &#39;first &#39; &quot;second&quot; AS combined;
+</code></pre>
+<p>MySQL-mode strings interpret <code>\0</code>, <code>\b</code>, <code>\n</code>, <code>\r</code>, <code>\t</code>, and <code>\Z</code> as NUL,
+backspace, newline, carriage return, tab, and ASCII 26. <code>\\</code>, <code>\&#39;</code>, and <code>\&quot;</code>
+represent a backslash, single quote, and double quote. Other escaped characters
+lose the backslash. <code>\%</code> and <code>\_</code> preserve the backslash for LIKE pattern matching;
+MySQL-mode LIKE/NOT LIKE expressions use backslash as their default escape.
+An explicit one-byte <code>ESCAPE</code> overrides that default. These rules follow
+<a href="https://dev.mysql.com/doc/refman/8.0/en/string-literals.html">MySQL string literals</a>.</p>
+<pre><code class="language-sql">SELECT &quot;a_b&quot; LIKE &quot;a\_b&quot; AS literal_underscore;
+SELECT &quot;100%&quot; LIKE &quot;100\%&quot; AS literal_percent;
+SELECT &quot;C:\\data\\file&quot; AS path;
+</code></pre>
+<p>Prepared bindings contain values rather than SQL syntax: a bound Go string
+containing <code>\n</code> retains those two characters. Only quoted text in the SQL statement
+is unescaped. Strings and quoted identifiers containing <code>?</code> do not create
+parameters.</p>
+<h2 id="schema-persistence-and-sql-output">Schema persistence and SQL output</h2>
+<p>DEFAULT, CHECK, views and trigger bodies persist canonical SQL after the input
+has been parsed. Their meaning remains the same after reopen, renames and other
+schema changes, including when reopening with the default quoting rules.</p>
+<p><code>Dump</code>, the schema SQL getters, and <code>SHOW CREATE TABLE/VIEW/TRIGGER</code> render SQL
+using the open database&#39;s quoting option. MySQL-mode output uses backtick
+identifiers and escapes string bytes, so it can be restored into another database
+opened with <code>MySQLQuoting: true</code>. The CLI&#39;s <code>.dump</code>, <code>.save</code>, <code>.schema</code>, <code>.read</code>,
+<code>.import</code>, <code>.plan</code>, and <code>.explain</code> follow the selected mode. Pipe/file statement
+splitting and REPL completion account for escaped quotes and quoted semicolons.</p>
+<h2 id="direct-parsing">Direct parsing</h2>
+<p>Applications using the SQL package directly can choose the same input rules:</p>
+<pre><code class="language-go">options := sql.ParseOptions{MySQLQuoting: true}
+statements, err := sql.ParseWithOptions(text, options)
+prepared, err := sql.PrepareWithOptions(text, options)
+</code></pre>
+<p><code>NewTokenizerWithOptions</code> uses the same option. Existing <code>Parse</code>, <code>Prepare</code>, and
+<code>NewTokenizer</code> calls retain their default behavior. <code>Database.ParseOptions()</code>
+returns the options to use when independently parsing SQL for that database.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/sql-quoting.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

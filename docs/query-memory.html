@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Query operator memory and spill files — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Query operator memory and spill files — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html" aria-current="page">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / QUERY OPERATOR MEMORY AND SPILL FILES</p><h1 id="query-operator-memory-and-spill-files">Query operator memory and spill files</h1>
+<p>SQL operators use a 64 MiB working-set budget by default. Set
+<code>storage.Options.QueryMemoryBytes</code> to a positive byte count to change it for a
+database, or pass <code>db.ExecOptions{MemoryBytes: &amp;bytes}</code> for one execution.
+Zero selects the default; negative values are rejected. Prepared executions,
+independent sessions and transactions inherit these settings. The budget uses
+conservative estimates of retained Go values rather than process RSS or total
+allocations. Concurrent operators and sessions have separate budgets.</p>
+<p><code>storage.Options.QueryTempDir</code> selects the parent directory for temporary spill
+files. An empty value uses the operating system&#39;s temporary directory. A named
+parent directory must already exist and be writable; a parent inside the database
+directory is rejected. Each operator creates a
+private directory with restricted permissions outside the database directory;
+normal completion, execution errors and cancellation close its files and remove
+its directory. A process crash can leave temporary directories behind. These
+files are disposable intermediate values, do not use the database&#39;s storage
+format, and never change its WAL/durability setting.</p>
+<p>For deterministic single-table <code>ORDER BY ... LIMIT ... OFFSET ...</code>, a maximum
+heap retains the best <code>LIMIT + OFFSET</code> rows. The window remains an overflow-safe
+int64. Existing ordered index scans keep their early stop. A window that grows
+past the budget switches to external sorting; unrestricted sorts also spill
+sorted runs. Runs are merged in generations with at most eight readers open.
+NULL ordering, exact mixed integer/real comparisons, BLOBs, direction and stable
+ties use the same SQL comparison rules. Sorting errors are propagated before
+comparison. Simple projections are evaluated once per input row.</p>
+<p>GROUP BY on a leading clustered primary-key prefix consumes one ordered physical
+interval with one typed/ordinary accumulator and finalizes each group as its key
+changes. This avoids retaining a group map or spilling/restarting an already
+ordered input. Each finalized group closes and unregisters only its own DISTINCT
+spill stores, and releases their engine/cache pointers before reusing the
+accumulator. Statement cleanup detaches the remaining ownership list before
+closing it, preserving cleanup after errors and cancellation.
+GROUP BY aliases and ordinal references are resolved before
+checking the prefix; secondary indexes, point sets, joins and multiple intervals
+keep their existing safe paths.</p>
+<p>Other streaming aggregation uses its typed/ordinary accumulators while their estimated
+working set fits. If group cardinality or variable-width state exceeds the
+budget, it restarts the input using the <strong>same statement snapshot and private
+transaction writes</strong>, externally sorts by group identity, and accumulates one
+group at a time. Aggregate DISTINCT sets spill to disk independently. Duplicate
+arguments, NULLs, original group input order, HAVING and aggregate ORDER BY are
+preserved. Aggregate input expressions with volatility stay on the existing
+fallback path: oversized fallback aggregation reports an explicit memory-budget
+error rather than changing how often volatile expressions execute.</p>
+<p>Equality hash joins incrementally build projected input buckets. Oversized
+buckets move to a private WAL-free SlopDB storage index keyed by escaped bucket
+identity and a 64-bit insertion ordinal. Exact bounded seeks decode only the
+matching bucket, one record at a time even for a highly duplicated key. A small
+adjacent-bucket cache avoids repeated decoding of neighboring repeated probes.
+The temporary index caps memtables, decoded block caches and open readers; very
+tiny query budgets retain a minimum 64 KiB memtable/cache allowance as fixed
+engine overhead. The indexed-probe cache also respects the budget. Legacy
+joins can spill their bucket indexes while retaining their existing input-row
+representation. DISTINCT result-key sets and overlapping access-path row-key
+sets use disk-backed strategies when their keys exceed the budget.</p>
+<p>This is an <strong>operator working-set budget</strong>, not a hard limit on total query
+memory. <code>Exec</code> still materializes its output; one returned value or row can exceed
+the budget, and <code>GROUP_CONCAT</code> must eventually materialize its result string.
+Merge readers, codecs and I/O buffers add fixed overhead. Indexed-probe candidate
+slices, legacy join inputs, derived-table/compound results and locking row-key
+lists can still be materialized. Unsupported aggregation shapes have the
+explicit limit above. Streaming result APIs and more general streaming input
+operators can address those remaining materializations separately.</p>
+<p><code>EXPLAIN ANALYZE</code> reports <code>memory_limit_bytes</code>, <code>spill_bytes</code>, <code>spill_runs</code> and <code>spill_rows_read</code> on
+its <code>QueryProfile</code> summary and API profile. Spill bytes count temporary sorted-run file
+writes (including merge rewrites) plus installed temporary-index SSTable flush
+and compaction output. They do not count logical inserts still in a temporary
+memtable or manifest bytes. Spill runs count generated sorted runs plus completed
+temporary-index flushes/compactions. <code>spill_rows_read</code> counts indexed spill
+records actually decoded, excluding cache hits; missing probes decode zero
+records. Metrics include the final temporary-index flush during cleanup. <code>TopK</code>, <code>ExternalSort</code>, <code>SpillAggregate</code> and <code>SpillHashJoin</code>
+identify the relevant execution stages. These counters report actual work, not
+only whether the query was eligible to spill.</p>
+<p>The regression tests force 256/512-byte budgets and independently assert sorted
+rows, aggregate formulas, duplicate join multiplicities, DISTINCT, int64 window
+overflow, prepared execution, rollback/reopen, failure propagation and cleanup.
+<code>BenchmarkTopKRetention</code> consumes the same 10,000 input rows for both cases:
+Top-K10 retains copies only for heap candidates; full sorting retains all rows.
+On the development ARM64 host, a short diagnostic run measured 68,304 bytes and
+280 allocations for Top-K10 versus approximately 8.73 MB and 20,004 allocations
+for full sort. These are operator microbenchmarks, not TPC throughput scores.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/query-memory.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

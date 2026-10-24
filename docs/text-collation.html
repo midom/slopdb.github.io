@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Text collation and Unicode equivalence — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Text collation and Unicode equivalence — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html" aria-current="page">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / TEXT COLLATION AND UNICODE EQUIVALENCE</p><h1 id="text-collation-and-unicode-equivalence">Text collation and Unicode equivalence</h1>
+<p>SlopDB stores the original bytes of every <code>TEXT</code> value. A collation controls how
+those values compare and how their index keys are built; it does not rewrite the
+text returned by a query. The collation is a database-wide setting, with explicit
+SQL <code>BINARY</code> overrides for individual expressions and columns.</p>
+<h2 id="modes">Modes</h2>
+<p><code>BINARY</code> is the default for new and existing databases. It compares <code>TEXT</code> byte
+for byte. Four Unicode normalization forms are available, each with an optional
+<code>_CI</code> suffix for case insensitive comparison:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Equivalence</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BINARY</code></td>
+<td>Identical bytes</td>
+<td><code>é</code> differs from <code>e</code> followed by a combining acute accent.</td>
+</tr>
+<tr>
+<td><code>NFC</code>, <code>NFD</code></td>
+<td>Canonical Unicode equivalence</td>
+<td>Those two spellings of <code>é</code> compare equal.</td>
+</tr>
+<tr>
+<td><code>NFKC</code>, <code>NFKD</code></td>
+<td>Canonical and compatibility equivalence</td>
+<td>Fullwidth <code>Ａ</code> compares equal to <code>A</code>; ligature <code>ﬀ</code> compares equal to <code>ff</code>.</td>
+</tr>
+<tr>
+<td>Any Unicode mode with <code>_CI</code></td>
+<td>Its normalization equivalence plus Unicode case folding</td>
+<td>Under <code>NFKC_CI</code>, <code>Ａ</code> compares equal to <code>a</code>.</td>
+</tr>
+</tbody></table>
+</div><p>NFC and NFKC use composed normalized keys; NFD and NFKD use decomposed keys.
+Equal values compare equal in either form, but their ordering can differ because
+the normalized keys differ. <code>_CI</code> uses Unicode case folding, rather than a
+locale-specific alphabetic order. For example, <code>Straße</code> and <code>STRASSE</code> compare
+equal under <code>NFC_CI</code>. These modes are not locale-aware language collations.</p>
+<p>Invalid UTF-8 in a <code>TEXT</code> value is compared bytewise. SlopDB leaves its bytes
+unchanged instead of replacing invalid sequences during normalization. <code>BLOB</code>
+values are unaffected by text collation. <code>VARCHAR(n)</code> is bounded <code>TEXT</code> and uses
+the same collation and <code>BINARY</code> override rules; its length counts stored UTF-8
+runes before normalization. <code>VARBINARY(n)</code> is bounded <code>BLOB</code> and counts bytes.</p>
+<h2 id="read-and-change-the-setting">Read and change the setting</h2>
+<pre><code class="language-sql">PRAGMA collation;                 -- returns the persisted mode
+PRAGMA collation = &#39;NFC_CI&#39;;      -- canonical equivalence plus case folding
+PRAGMA collation(NFKC_CI);       -- compatibility equivalence plus case folding
+</code></pre>
+<p>The Go <code>*db.Database</code> API also provides <code>database.SetCollation(&quot;NFKC_CI&quot;)</code> and
+<code>database.SetCollationContext(ctx, &quot;NFKC_CI&quot;)</code>. Mode names are case insensitive on
+input; <code>PRAGMA collation</code> reports their uppercase spelling. Unsupported mode
+names fail. The selected mode survives closing and reopening the database.</p>
+<p>The setting affects <code>TEXT</code> equality and ordering, including predicates,
+<code>ORDER BY</code>, grouping, <code>DISTINCT</code>, <code>IN</code>, uniqueness checks, and index lookups.
+<code>LIKE</code> normalizes its input and pattern under Unicode modes before applying its
+existing wildcard rules. <code>GLOB</code> and <code>REGEXP</code> retain their existing matching
+behavior and do not use the collation. No mode changes numeric or <code>BLOB</code>
+comparisons.</p>
+<h2 id="override-one-expression-or-column">Override one expression or column</h2>
+<pre><code class="language-sql">SELECT * FROM names WHERE BINARY name = &#39;é&#39;;
+SELECT * FROM names WHERE name COLLATE BINARY = &#39;é&#39;;
+
+CREATE TABLE names (
+    id INTEGER PRIMARY KEY,
+    display_name TEXT,
+    exact_code TEXT COLLATE BINARY UNIQUE
+);
+</code></pre>
+<p><code>BINARY expression</code> and <code>expression COLLATE BINARY</code> compare the expression&#39;s
+text without Unicode normalization or case folding. <code>TEXT BINARY</code> is an
+equivalent column declaration to <code>TEXT COLLATE BINARY</code>; it persists and keeps
+that column&#39;s comparisons and index keys bytewise when the database mode
+changes. Other per-column or per-expression collation names are unsupported.</p>
+<p>For <code>LIKE</code>, a <code>BINARY</code> override bypasses Unicode normalization and folding.
+<code>LIKE</code> still retains its existing ASCII case behavior and <code>_</code> rune matching;
+use <code>=</code> for exact bytewise equality. <code>GLOB</code> and <code>REGEXP</code> follow their existing
+rules regardless of a <code>BINARY</code> override.</p>
+<h2 id="changing-a-mode-with-existing-data">Changing a mode with existing data</h2>
+<p>A mode change rebuilds all secondary indexes and clustered <code>TEXT</code> primary keys
+in one statement transaction. The original row text remains intact. A primary
+key or <code>UNIQUE</code> index can acquire a new collision when previously distinct text
+becomes equivalent. SlopDB rejects that change and leaves the old setting and
+keys in place. Resolve the duplicate values and retry. The change can be part
+of an explicit transaction; rollback restores the previous mode and keys.</p>
+<p>For example, changing to <code>NFC</code> fails if a <code>UNIQUE</code> column contains both <code>é</code>
+and <code>e</code> followed by a combining acute accent. A <code>TEXT COLLATE BINARY</code> column
+continues to distinguish them, including in its indexes.</p>
+<p>The rebuild reads and stages all affected rows and index mutations in memory.
+Plan for temporary memory use and a period in which catalog changes and writers
+wait on a large database. Unicode range and join plans may use a conservative
+scan path where a bytewise index bound cannot preserve collation semantics.</p>
+<p>Collation keys depend on the Unicode data supplied by the pinned
+<code>golang.org/x/text</code> dependency. If that dependency&#39;s Unicode tables are updated,
+rebuild the keys by changing to <code>BINARY</code> and back to the desired Unicode mode
+before relying on indexed comparisons under the new tables.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/text-collation.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

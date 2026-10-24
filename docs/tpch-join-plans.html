@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Indexed joins, selective execution, and allocation improvements — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Indexed joins, selective execution, and allocation improvements — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / INDEXED JOINS, SELECTIVE EXECUTION, AND ALLOCATION IMPROVEMENTS</p><h1 id="indexed-joins-selective-execution-and-allocation-improvements">Indexed joins, selective execution, and allocation improvements</h1>
+<p>The additional execution changes reduce the sum of 22 TPC-H query medians at SF=0.01 from 5.057 seconds to 0.892 seconds: <strong>5.67x faster</strong>. Allocated bytes for one execution of each query fall from 2,534.5 MiB to 235.8 MiB, a 90.7% reduction. All 22 answers match SQLite and DuckDB at SF=0.001 and SF=0.01. These results extend the <a href="tpch-optimization.html">earlier execution improvements</a>.</p>
+<h2 id="problems-addressed">Problems addressed</h2>
+<ul>
+<li>Fixed join order and large unfiltered inputs: INNER/CROSS joins now choose a connected order using ANALYZE counts, index bounds, and small filtered input cardinalities. The planner considers every starting relation and refines estimates after inspecting selective inputs. LEFT joins preserve their original order and ON/WHERE stages.</li>
+<li>Scanning an entire relation for a few matches: join readers probe clustered primary keys, composite prefixes, and secondary indexes. Larger inputs can use hash joins when repeated probes would cost more. Safe numeric key equivalence, duplicate matches, and NULL behavior are preserved.</li>
+<li>OR predicates preventing index use: bounded AND/OR expansion produces multiple access paths, deduplicates overlapping row keys, and derives necessary local filters even across multi-table OR branches. Every access path retains full residual predicate evaluation.</li>
+<li>Correlated rescans: exact typed outer comparisons bind into execution-local predicates across joined subqueries. Indexed aggregation streams matching rows; EXISTS stops at its first qualifying row without evaluating unused projection expressions. Uncorrelated IN sets can drive indexed access instead of scanning every candidate row.</li>
+<li>Wide intermediate row maps and allocation pressure: joins share a scratch row, project before retaining results, and feed aggregate accumulators directly. Groups keep only required representative values. Scans decode referenced columns and batch secondary-index base-row reads.</li>
+<li>Repeated LIKE allocation: compiled patterns are reused within a statement, and wildcard matching avoids allocating a dynamic-programming matrix for every row. Unicode underscores, ASCII case folding, ESCAPE, and newline matching retain SQL behavior.</li>
+</ul>
+<p>Statement-local point-read caches are bounded by 4,096 entries and 16 MiB of raw keys/values. Correlated-result and join-probe caches also cap retained rows at 8,192. Cache cleanup runs after statements, including errors; prepared queries, transaction writes, and rollback do not reuse stale results. Volatile expressions, uncertain scopes, derived join inputs, USING/NATURAL, and locking reads retain established fallback paths. EXPLAIN now reports eligible join order and available index access; runtime cardinality can change the final choice between probes and hashing.</p>
+<h2 id="controlled-tpc-h-comparison">Controlled TPC-H comparison</h2>
+<p>Both SlopDB binaries use Go 1.22.2 on the same four-core Linux/ARM64 host, identical DBGEN inputs and indexes, prepared statements, fresh disk databases reopened after loading, one warmup and three measured executions per query. WAL is enabled and WAL fsync disabled. Loading, ANALYZE, preparation, EXPLAIN, and reopening are outside each query timing. All 66 measured executions succeed at each tested scale. SF=0.01 has 60,175 lineitems and 15,000 orders.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Query</th>
+<th align="right">SlopDB before ms</th>
+<th align="right">SlopDB after ms</th>
+<th align="right">Speedup</th>
+<th align="right">DuckDB ms</th>
+<th align="right">SQLite ms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q01</td>
+<td align="right">149.13</td>
+<td align="right">154.25</td>
+<td align="right">0.97x</td>
+<td align="right">3.95</td>
+<td align="right">92.08</td>
+</tr>
+<tr>
+<td>Q02</td>
+<td align="right">280.43</td>
+<td align="right">1.47</td>
+<td align="right">191.29x</td>
+<td align="right">3.03</td>
+<td align="right">0.41</td>
+</tr>
+<tr>
+<td>Q03</td>
+<td align="right">202.79</td>
+<td align="right">80.57</td>
+<td align="right">2.52x</td>
+<td align="right">2.90</td>
+<td align="right">7.29</td>
+</tr>
+<tr>
+<td>Q04</td>
+<td align="right">155.83</td>
+<td align="right">20.27</td>
+<td align="right">7.69x</td>
+<td align="right">3.03</td>
+<td align="right">1.49</td>
+</tr>
+<tr>
+<td>Q05</td>
+<td align="right">194.80</td>
+<td align="right">64.69</td>
+<td align="right">3.01x</td>
+<td align="right">3.38</td>
+<td align="right">3.55</td>
+</tr>
+<tr>
+<td>Q06</td>
+<td align="right">88.77</td>
+<td align="right">41.79</td>
+<td align="right">2.12x</td>
+<td align="right">1.15</td>
+<td align="right">5.85</td>
+</tr>
+<tr>
+<td>Q07</td>
+<td align="right">658.25</td>
+<td align="right">38.05</td>
+<td align="right">17.30x</td>
+<td align="right">3.26</td>
+<td align="right">30.33</td>
+</tr>
+<tr>
+<td>Q08</td>
+<td align="right">157.07</td>
+<td align="right">11.66</td>
+<td align="right">13.48x</td>
+<td align="right">3.43</td>
+<td align="right">0.85</td>
+</tr>
+<tr>
+<td>Q09</td>
+<td align="right">318.35</td>
+<td align="right">103.57</td>
+<td align="right">3.07x</td>
+<td align="right">4.65</td>
+<td align="right">12.65</td>
+</tr>
+<tr>
+<td>Q10</td>
+<td align="right">210.66</td>
+<td align="right">30.43</td>
+<td align="right">6.92x</td>
+<td align="right">4.78</td>
+<td align="right">4.37</td>
+</tr>
+<tr>
+<td>Q11</td>
+<td align="right">87.34</td>
+<td align="right">4.90</td>
+<td align="right">17.82x</td>
+<td align="right">3.07</td>
+<td align="right">1.10</td>
+</tr>
+<tr>
+<td>Q12</td>
+<td align="right">212.63</td>
+<td align="right">74.02</td>
+<td align="right">2.87x</td>
+<td align="right">2.54</td>
+<td align="right">6.75</td>
+</tr>
+<tr>
+<td>Q13</td>
+<td align="right">196.92</td>
+<td align="right">77.13</td>
+<td align="right">2.55x</td>
+<td align="right">3.06</td>
+<td align="right">11.35</td>
+</tr>
+<tr>
+<td>Q14</td>
+<td align="right">249.53</td>
+<td align="right">8.82</td>
+<td align="right">28.30x</td>
+<td align="right">1.58</td>
+<td align="right">0.95</td>
+</tr>
+<tr>
+<td>Q15</td>
+<td align="right">149.74</td>
+<td align="right">16.07</td>
+<td align="right">9.32x</td>
+<td align="right">1.81</td>
+<td align="right">4.29</td>
+</tr>
+<tr>
+<td>Q16</td>
+<td align="right">48.08</td>
+<td align="right">19.29</td>
+<td align="right">2.49x</td>
+<td align="right">2.12</td>
+<td align="right">2.06</td>
+</tr>
+<tr>
+<td>Q17</td>
+<td align="right">209.23</td>
+<td align="right">2.22</td>
+<td align="right">94.41x</td>
+<td align="right">0.72</td>
+<td align="right">0.23</td>
+</tr>
+<tr>
+<td>Q18</td>
+<td align="right">232.46</td>
+<td align="right">89.99</td>
+<td align="right">2.58x</td>
+<td align="right">4.82</td>
+<td align="right">15.25</td>
+</tr>
+<tr>
+<td>Q19</td>
+<td align="right">700.40</td>
+<td align="right">3.88</td>
+<td align="right">180.34x</td>
+<td align="right">2.25</td>
+<td align="right">0.82</td>
+</tr>
+<tr>
+<td>Q20</td>
+<td align="right">67.34</td>
+<td align="right">7.87</td>
+<td align="right">8.56x</td>
+<td align="right">3.26</td>
+<td align="right">0.82</td>
+</tr>
+<tr>
+<td>Q21</td>
+<td align="right">457.99</td>
+<td align="right">31.32</td>
+<td align="right">14.62x</td>
+<td align="right">7.02</td>
+<td align="right">1.48</td>
+</tr>
+<tr>
+<td>Q22</td>
+<td align="right">29.32</td>
+<td align="right">9.52</td>
+<td align="right">3.08x</td>
+<td align="right">1.57</td>
+<td align="right">1.02</td>
+</tr>
+</tbody></table>
+</div><p>The DuckDB column uses the existing same-input Go-driver run with one native execution thread. SQLite is the new in-memory Python correctness-reference run, one execution per query. Its timing is useful for identifying execution gaps but differs in storage and timing methodology. DuckDB totals 67.40 ms; current SlopDB remains 13.2x slower by the sum of query medians. No new DuckDB or SQLite executor changes are included.</p>
+<p>Q02 improves through selective part filtering and indexed supplier/partsupp probes. Q17 combines a selective outer join with indexed correlated AVG. Q19 distributes its OR branches into narrow inputs and probes matching lineitems. Q14 bounds the date range before joining parts. Q21 uses selective join order and indexed EXISTS/NOT EXISTS probes. Q07/Q09 avoid retaining wide maps from their derived queries. Q13 benefits from allocation-free LIKE matching and streamed grouping.</p>
+<p>Q01, a broad scan and aggregation, is 3.4% slower in this pair of runs; these changes do not improve every query. Scan-heavy Q01/Q06/Q18, remaining map/expression work, and general correlated-query decorrelation still leave substantial headroom. This is a bounded heuristic planner, without histograms, exhaustive plan search, columnar/vectorized execution, or spillable aggregation. These sums are independently measured query medians, not suite wall time or certified QphH.</p>
+<h2 id="tpc-c-regression-measurement">TPC-C regression measurement</h2>
+<p>Fresh sequential runs use 10 concurrent workers for 60 seconds, the same default scale, seed 42, prepared statements, WAL enabled, and <strong>WAL fsync disabled</strong>. Loading and consistency validation are excluded.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th align="right">Before</th>
+<th align="right">After</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Committed transactions</td>
+<td align="right">130,663</td>
+<td align="right">129,613</td>
+</tr>
+<tr>
+<td>Transactions/sec</td>
+<td align="right">2,177.70</td>
+<td align="right">2,160.18</td>
+</tr>
+<tr>
+<td>Mean latency ms</td>
+<td align="right">4.568</td>
+<td align="right">4.606</td>
+</tr>
+<tr>
+<td>P95 latency ms</td>
+<td align="right">15.084</td>
+<td align="right">14.982</td>
+</tr>
+<tr>
+<td>P99 latency ms</td>
+<td align="right">24.275</td>
+<td align="right">24.321</td>
+</tr>
+<tr>
+<td>Unexpected failures / retries</td>
+<td align="right">0 / 0</td>
+<td align="right">0 / 0</td>
+</tr>
+<tr>
+<td>Checks after run / reopen</td>
+<td align="right">15/15 / 15/15</td>
+<td align="right">15/15 / 15/15</td>
+</tr>
+</tbody></table>
+</div><p>Throughput differs by -0.80% in this single pair of runs. The before/after runs respectively record 567 / 566 intentional invalid-item rollbacks and 10 / 10 shutdown cancellations, separately from failures. This workload remains around 2,200 committed transactions/sec; the measurements do not establish statistical equivalence or a compliant TPC-C score.</p>
+<h2 id="correctness-and-reproduction">Correctness and reproduction</h2>
+<p>The regression suites now live in the repository and run with <code>go test ./...</code>
+and <code>go test -race ./...</code>; see <a href="testing.html">Testing</a> for their locations,
+reference fixtures and selective commands.</p>
+<p>The new SQLite differential suite passes 3,594 checks across fresh and reopened databases: INNER/LEFT/CROSS joins, mixed outer joins, grouping, NULLs, overlapping OR paths, raw TEXT/BLOB index delimiters, composite keys, correlated aggregates, IN sets, EXISTS with 64-bit pagination, and randomized Unicode/ESCAPE LIKE patterns. Another 319 checks pass with the race detector for prepared joins, transaction/savepoint changes, cache invalidation, indexed DML, validation errors, concurrency, and cancellation.</p>
+<p>Existing validation also passes: 599 SQL differential cases, 98 execution cases, 16 cache/numeric cases, 134 SQL semantics checks, 302 tuple-plan comparisons, 177 indexed-read cases, 45 read/view checks, primary-key locking checks, 2,071 prepared API checks with the race detector, and 4,000 concurrent indexed MVCC updates with the race detector. Build and vet pass.</p>
+<p>Generate DBGEN inputs in <code>/tmp/slopdb-bench/tpch-sf01</code> as described in the
+<a href="https://github.com/midom/slopdb/blob/main/cmd/tpch/README.md">benchmark README</a>, then run:</p>
+<pre><code class="language-sh">mkdir -p /tmp/slopdb-bench
+go build -o slopdb .
+go vet ./...
+go build -o /tmp/slopdb-bench/slopdb-tpch-joins ./cmd/tpch
+/tmp/slopdb-bench/slopdb-tpch-joins -data /tmp/slopdb-bench/tpch-sf01 -timeout 30s \
+  -warmups 1 -runs 3 -json /tmp/slopdb-bench/tpch-after-joins-final.json
+python3 cmd/tpch/verify.py --data /tmp/slopdb-bench/tpch-sf01 \
+  --report /tmp/slopdb-bench/tpch-after-joins-final.json \
+  --duckdb-report docs/benchmarks/tpch/sf01-duckdb.json
+
+go run ./cmd/tpcc -workers 10 -duration 1m \
+  -json /tmp/slopdb-bench/tpcc-after-joins-final.json
+</code></pre>
+<p>Raw reports: <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/tpch/sf01-before-join-plans.json">TPC-H before</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/tpch/sf01-join-plans.json">TPC-H after</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/tpch/sf01-join-plans-reference.json">SF=0.01 verification</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/tpch/sf001-join-plans.json">SF=0.001 execution</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/tpch/sf001-join-plans-reference.json">SF=0.001 verification</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/tpch/join-plan-comparison.json">calculated comparison</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/tpcc/before-join-plans.json">TPC-C before</a>, and <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/tpcc/after-join-plans.json">TPC-C after</a>.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/tpch-join-plans.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

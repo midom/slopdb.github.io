@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Execution, APIs and SQL improvements — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Execution, APIs and SQL improvements — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / EXECUTION, APIS AND SQL IMPROVEMENTS</p><h1 id="execution-apis-and-sql-improvements">Execution, APIs and SQL improvements</h1>
+<p>The parallel improvement branches are integrated into <code>main</code>. Each branch used
+an isolated Git worktree, committed its implementation and permanent tests, and
+was merged with its history intact. Additional integration tests cover prepared
+CTE/window/UPSERT execution, CTE shadowing in optimized EXISTS, computed ordering
+aliases in cursors, and high-fanout hash joins under small memory budgets.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Integrated behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Access paths</td>
+<td>Shared bounds for scalar/composite keys, BETWEEN, constant expressions and finite IN/OR sets; bounded forward/reverse cursors and qualified Top-K predicates</td>
+</tr>
+<tr>
+<td>Typed execution</td>
+<td>Slot-bound, batched single-table aggregation for eligible deterministic expressions; ordinary execution remains available for other shapes</td>
+</tr>
+<tr>
+<td>Actual profiling</td>
+<td>EXPLAIN ANALYZE reports reads, probes, join candidates, lock waits, allocation deltas and spill work</td>
+</tr>
+<tr>
+<td>Statistics</td>
+<td>Persisted bounded samples, distinct estimates, NULL fractions, common values and histograms influence index/scan and join choices</td>
+</tr>
+<tr>
+<td>Operator memory</td>
+<td>Overflow-safe Top-K, external sorting, spill aggregation, hash buckets and deduplication with configurable working budgets</td>
+</tr>
+<tr>
+<td>Prepared plans</td>
+<td>Private reusable bindings and plan recipes, fresh parameter bounds and snapshot reads, catalog/statistics invalidation</td>
+</tr>
+<tr>
+<td>Application APIs</td>
+<td>Streaming rows, atomic bulk/CSV import, online committed-snapshot backup and integrity checking</td>
+</tr>
+<tr>
+<td>Performance checks</td>
+<td>Portable bounded-read invariants, microbenchmarks, repeatable workload matrices, resource/storage counters and CI artifacts</td>
+</tr>
+<tr>
+<td>UPSERT</td>
+<td>ON CONFLICT targets, DO NOTHING/DO UPDATE, excluded values, normal constraint/trigger/index/locking behavior</td>
+</tr>
+<tr>
+<td>CTEs</td>
+<td>Scoped/dependent WITH, UNION/UNION ALL recursion, DML and persisted views, configurable int64 recursion guardrails</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>Ranking, navigation and aggregate functions, named windows and ROWS/RANGE/GROUPS frames</td>
+</tr>
+</tbody></table>
+</div><p>Feature details and restrictions are documented in
+<a href="typed-execution.html">typed execution</a>, <a href="query-profiling.html">profiling</a>,
+<a href="query-statistics.html">statistics</a>, <a href="query-memory.html">memory</a>,
+<a href="prepared-statements.html">prepared statements</a>, <a href="application-operations.html">application operations</a>,
+<a href="performance-regressions.html">performance checks</a>, <a href="upsert.html">UPSERT</a>,
+<a href="common-table-expressions.html">CTEs</a> and <a href="window-functions.html">windows</a>.</p>
+<p>The default 64 MiB operator budget is a soft working-set estimate, not a process
+memory cap. Exec output and some intermediate operators still materialize.
+Windows reject budget exhaustion rather than spilling. Recursive queries and
+UPSERT support the documented subset; unsupported shapes produce errors.
+Statistics remain unchanged after DML until ANALYZE. Logical profiling bytes and
+storage file counters do not measure physical device I/O.</p>
+<p><a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/improvements/README.md">Paired benchmark results</a> preserve all twenty-two
+TPC-H queries, TPC-C throughput, correctness evidence and measured revisions.
+TPC-H total measured query time fell 34.8%; individual query regressions remain.
+The single paired TPC-C runs measured 2,139.5 and 2,125.8 transactions/second.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/project-improvements.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
