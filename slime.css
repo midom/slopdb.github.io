@@ -1,0 +1,77 @@
+/* A little more of the logo's character, kept clear of reading and code. */
+.site-header .brand img{width:184px;height:auto}
+.hero{padding-top:58px;padding-bottom:62px;gap:46px}
+.hero-visual{padding:0;min-width:0}
+.hero-brand-art{position:relative;isolation:isolate;min-height:475px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:10px}
+.hero-slime-blob{position:absolute;z-index:-1;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.hero-mascot{width:230px;height:auto;transform:rotate(-6deg);filter:drop-shadow(0 10px 0 #29331d12)}
+.hero-brand-type{font-family:var(--sans);font-size:105px;font-weight:900;line-height:1.05;letter-spacing:-7px;color:#242521;margin-top:2px}
+.hero-brand-type>span{color:#80ad20}
+.hero-brand-tagline{font:10px/1.8 var(--mono);letter-spacing:1.8px;color:#566044;margin-top:10px}
+.brand-art-note{display:flex;align-items:center;justify-content:center;gap:8px;font:8px/1.8 var(--mono);letter-spacing:1px;color:#6d785d;margin:14px 0 0}
+.brand-art-note .status-dot{width:5px;height:5px}
+.hero h1{isolation:isolate}
+.slop-word::after{content:'';position:absolute;bottom:-16px;right:20%;width:10px;height:13px;border-radius:0 0 9px 9px;background:var(--lime);z-index:-1;transform:rotate(-4deg)}
+.primary{position:relative}
+.primary::after{content:'';position:absolute;bottom:-8px;right:19px;width:10px;height:10px;background:var(--lime);border-radius:0 0 10px 10px;pointer-events:none}
+.primary:hover::after{background:#c5f671}
+.deployment-card{position:relative}
+.deployment-card::before{content:'';position:absolute;top:0;right:14px;width:75px;height:18px;background:url('assets/slime-drips.svg') center top / 450px 19px no-repeat;pointer-events:none;opacity:.7}
+.raft-card::before{opacity:1;height:22px;background-size:540px 23px}
+.replication-section{position:relative;padding-top:93px}
+.replication-section::before{content:'';position:absolute;inset:0 0 auto;height:60px;background:url('assets/slime-drips.svg') center top / 1440px 60px repeat-x;pointer-events:none}
+.feature-icon{border-radius:13px 10px 15px 7px;background:#e7f1d7}
+.docs-intro img{filter:drop-shadow(0 5px 0 #9bc14726)}
+.closing{background:#e5f0d1;padding-top:54px;isolation:isolate}
+.closing::before{content:'';position:absolute;inset:0 0 auto;height:38px;background:url('assets/slime-drips.svg') center top / 1000px 42px repeat-x;pointer-events:none;z-index:-1}
+.closing-mascot{position:absolute;right:62px;top:39px;width:140px;transform:rotate(10deg);z-index:-1}
+.closing-mascot::before{content:'';position:absolute;bottom:-6px;left:-15px;width:175px;height:28px;background:#b4eb45;border-radius:45% 55% 40% 60%;transform:rotate(-10deg);z-index:-1}
+@media(min-width:1500px){.hero{padding-top:68px;padding-bottom:78px}}
+@media(max-width:1100px){
+  .site-header .brand img{width:165px}
+  .hero{gap:25px;padding-top:45px}
+  .hero-brand-art{min-height:410px}
+  .hero-mascot{width:196px}
+  .hero-brand-type{font-size:90px;letter-spacing:-6px}
+  .hero-brand-tagline{font-size:8px;letter-spacing:1.4px}
+  .brand-art-note{font-size:7px;letter-spacing:.7px}
+  .closing-mascot{right:40px}
+}
+@media(max-width:800px){
+  .site-header .brand img{width:145px}
+  .site-header nav{gap:16px;margin-right:0}
+  .hero{gap:25px;padding-top:22px;padding-bottom:48px}
+  .hero-visual{order:-1;width:100%;max-width:520px}
+  .hero-brand-art{display:grid;grid-template-columns:145px auto;grid-template-rows:1fr 1fr;gap:0 19px;align-content:center;justify-content:center;min-height:237px;padding:25px}
+  .hero-slime-blob{inset:-10% 0;width:100%;height:120%}
+  .hero-mascot{width:145px;grid-row:1 / 3;align-self:center}
+  .hero-brand-type{font-size:86px;letter-spacing:-6px;align-self:end;margin:0}
+  .hero-brand-tagline{font-size:8px;letter-spacing:.8px;align-self:start;white-space:nowrap;margin-top:12px}
+  .brand-art-note{margin-top:0;font-size:7px}
+  .hero-copy{max-width:570px;width:100%;justify-self:center}
+  .hero h1{font-size:68px;margin-top:20px}
+  .replication-section{padding-top:82px}
+  .closing-mascot{right:30px;width:115px;top:66px}
+  .closing-mascot img{height:auto}
+  .closing-mascot::before{width:140px;height:22px;left:-12px}
+}
+@media(max-width:560px){
+  .site-header .brand img{width:116px}
+  .site-header nav{gap:13px}
+  .hero{padding-top:10px;gap:25px;padding-bottom:43px}
+  .hero-brand-art{min-height:180px;grid-template-columns:86px minmax(0,auto);column-gap:13px;padding:15px 0}
+  .hero-mascot{width:86px}
+  .hero-brand-type{font-size:clamp(50px,16vw,68px);letter-spacing:-4px}
+  .hero-brand-tagline{font-size:8px;letter-spacing:0;margin-top:9px}
+  .hero-slime-blob{inset:-5% 0;height:110%}
+  .brand-art-note{font-size:6px;letter-spacing:.8px}
+  .hero .eyebrow{font-size:8px}
+  .hero h1{font-size:clamp(49px,12.5vw,69px);margin-top:16px}
+  .hero-description{font-size:14px}
+  .hero-actions{margin-top:24px}
+  .hero-note{margin-top:23px}
+  .replication-section{padding-top:72px}
+  .replication-section::before{height:44px;background-size:1056px 44px}
+  .closing{padding-top:43px}
+  .closing-mascot{right:5px;top:auto;bottom:4px;width:95px;opacity:.22}
+}
