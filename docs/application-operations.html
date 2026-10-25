@@ -43,6 +43,12 @@ native integers and integer-to-float conversions outside the exact integer
 range of float64. Scanned BLOB buffers remain valid after Next and Close; changing
 them cannot mutate the database. Prepared query bindings remain private until
 their result closes, so concurrent executions do not reuse a live cursor&#39;s AST.</p>
+<p><code>Rows.ValuesInto(dst)</code> provides the same owned values while reusing the slice
+and each BLOB buffer&#39;s capacity. Pass its returned slice into the next call to
+reduce copying allocations. Each call gives up the old contents and all aliases
+to those destination buffers; use <code>Values()</code> when retaining independent rows.
+NULL clears the destination value, while an empty non-NULL BLOB remains an empty
+byte slice. The returned values remain valid after closing the result.</p>
 <h2 id="atomic-bulk-insertion">Atomic bulk insertion</h2>
 <p><code>Database.BulkInsert(ctx, table, columns, source)</code> consumes a <code>db.BulkSource</code>
 callback returning <code>[]any</code> bindings and <code>io.EOF</code>. It prepares INSERT shapes in
@@ -159,4 +165,15 @@ to inspect expected scans, rewrites and locking. See
 <a href="schema-change-planning.html">schema change planning</a> for limitations and online
 index operations. These commands report work; they do not validate every
 existing row or guarantee that the later operation will succeed.</p>
-<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/application-operations.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
+<h2 id="execute-an-already-parsed-select">Execute an already parsed SELECT</h2>
+<p>Protocol adapters can use <code>Session.QueryParsedContext(ctx, query, statement)</code> to execute an already parsed SELECT. Parse with <code>sql.ParseWithOptions(query, session.ParseOptions())</code> so the AST uses the session&#39;s SQL syntax. The <code>query</code> string supplies activity text only; the parsed statement determines execution. The caller must exclusively own the statement and leave it unchanged until the returned <code>Rows</code> closes. Admission, snapshots, catalog resolution, and cancellation follow <code>QueryContext</code>.</p>
+<p><code>Session.QueryParsedContextInto(ctx, dst, query, statement)</code> accepts a non-nil <code>*db.ExecResult</code> and a non-nil <code>*sql.SelectStmt</code>. It returns <code>(result, rows, err)</code> through one admission, timeout, and snapshot:</p>
+<ul>
+<li>A catalog-proven primary-key point lookup returns <code>result == dst</code> and <code>rows == nil</code>, reusing the destination&#39;s column, row, and BLOB storage when possible. A missing key produces an empty result.</li>
+<li>Other SELECT shapes return <code>result == nil</code> and non-nil <code>rows</code>, leaving <code>dst</code> unchanged. Consume and close those rows; inspect <code>Rows.Materialized()</code> to distinguish streaming from a materialized fallback.</li>
+<li>Check <code>err</code> before consuming either result. Destination contents are unspecified on error.</li>
+</ul>
+<p>The statement remains exclusively owned until execution completes or the returned rows close. Destination ownership follows <a href="prepared-statements.html#reuse-select-result-buffers">prepared result reuse</a>: give up prior contents and all aliases on entry, and use a separate destination per concurrent reader. This API does not cache SQL text or query answers.</p>
+<h2 id="observe-session-shutdown">Observe session shutdown</h2>
+<p><code>Session.ClosingContext()</code> returns a stable context canceled when that session or its owning database starts closing. Normal statement completion, statement cancellation, and <code>Rows.Close()</code> leave it live. Observing the context does not acquire the session execution gate. Protocol adapters can use its <code>Done()</code> channel to interrupt a blocked response write even after query rows are exhausted. The context belongs to the session; callers cannot cancel it.</p>
+<div class="doc-meta"><span>Project documentation and source-verified API notes · adbd3a6</span><a href="https://github.com/midom/slopdb/blob/main/docs/application-operations.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

@@ -53,6 +53,11 @@ Implementation-verified corrections to stale source prose are recorded in
 them without modifying the engine checkout and requires review if the source
 paragraph changes. Edit these inputs rather than generated HTML.
 
+Source-verified additions for APIs not yet covered by the upstream guides live
+in `content/guide-additions.json`. The generator appends them to the matching
+guide and checks that their source guide and evidence files still exist. Review
+these additions when refreshing the source to avoid duplicating upstream prose.
+
 `assets/icon.svg` and `assets/logo.svg` are vector adaptations of the supplied
 [slime-database logo reference](https://chatgpt.com/s/m_6add258a37248191a1638421f881c125).
 The downloaded reference is retained in `assets/brand-reference.jpg`.

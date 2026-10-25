@@ -108,6 +108,15 @@ mix its throughput into unprofiled results:</p>
 go tool pprof -top ~/slopdb-bench/select-profile/cpu.pprof
 go tool pprof -top ~/slopdb-bench/select-profile/mutex.pprof
 </code></pre>
+<p>For a separate TCP server process, add <code>-debug-profiles</code> to the server command.
+This enables standard <code>/debug/pprof/</code> handlers on its loopback statistics
+listener, plus sampled mutex and blocking diagnostics. Request a CPU profile
+after the client&#39;s checked warmup, for example
+<code>curl -o server-cpu.pprof &#39;http://127.0.0.1:33062/debug/pprof/profile?seconds=20&#39;</code>.
+Capture <code>/debug/pprof/allocs</code>, <code>/debug/pprof/mutex</code>, and <code>/debug/pprof/block</code>
+before and after that window; <code>go tool pprof -base before.pprof after.pprof</code>
+subtracts setup activity. These endpoints are disabled unless explicitly
+requested. Profiling runs measure diagnostics, not unprofiled throughput.</p>
 <p>Setup, page-spaced warmup, seed validation, compaction and close are outside the
 timed samples. No loading or writes run alongside measurements. Benchmark
 timings are not ordinary test pass/fail thresholds; functionality tests use
@@ -146,6 +155,10 @@ timings are not ordinary test pass/fail thresholds; functionality tests use
 <td><code>go-sql-driver/mysql</code> over loopback TCP</td>
 </tr>
 <tr>
+<td><code>-api mysql-lean -query-mode text</code> or <code>prepared</code></td>
+<td>Ordinal typed MySQL wire control with optional metadata disabled</td>
+</tr>
+<tr>
 <td><code>-api pgx -query-mode text</code> or <code>prepared</code></td>
 <td>pgx <code>database/sql</code> adapter over loopback TCP</td>
 </tr>
@@ -162,6 +175,16 @@ opening and lazy per-connection preparation finish before measurement. Timed
 calls use the shared ordinary <code>database/sql</code> pool; query results are fully
 scanned, drained and closed before validation and the next request. Pool wait
 counts, open connections and checked answers are recorded.</p>
+<p>The <code>mysql-lean</code> control negotiates standard <code>CLIENT_OPTIONAL_RESULTSET_METADATA</code>
+and <code>CLIENT_DEPRECATE_EOF</code>, then sets <code>SESSION resultset_metadata=NONE</code> before
+preparation. Each worker owns one connection and reusable packet/typed result
+buffers. It decodes this fixture&#39;s two BIGINTs and BLOB by ordinal without any
+column-definition packets. This is a fixture-specific protocol client with an
+empty-password <code>slopdb</code> login, not a general driver or a <code>database/sql</code> result.
+Reports label it <code>typed-wire:mysql-lean:...</code>; its missing shared pool overhead
+must be considered when comparing it with the ordinary <code>mysql</code> mode. It rejects
+unexpected metadata, malformed packets, extra rows, NULLs and incorrect values.
+Packets are bounded to 1 MiB, and input reads are buffered.</p>
 <p>Without <code>-endpoint</code>, wire clients start an isolated protocol server in the same
 process as the benchmark. CPU and allocation counters then include both ends.
 The embedded driver wraps the already-open fixture through its non-owning
@@ -185,4 +208,4 @@ metadata for validation. Client CPU/allocation counters exclude the server;
 window through the optional statistics URL. Storage statistics in those reports
 come from the server. Keep server and client runtime settings, transport, cache,
 connection count and result-consumption behavior explicit when comparing modes.</p>
-<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: cmd/select-bench/README.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
+<div class="doc-meta"><span>Rendered from the project documentation · adbd3a6</span><a href="https://github.com/midom/slopdb/blob/main/cmd/select-bench/README.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

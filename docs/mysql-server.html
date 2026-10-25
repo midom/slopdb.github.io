@@ -97,6 +97,31 @@ statements with typed parameters, long parameter data, statement reset/close,
 and connection reset. Results carry column metadata, NULLs, binary values,
 affected-row counts, generated IDs and transaction status. <code>CLIENT_FOUND_ROWS</code>
 selects matched-row counts; ordinary MySQL updates report changed rows.</p>
+<p>Small command responses are coalesced into a reusable buffer bounded at 64 KiB.
+Larger responses flush incrementally. Prepared execution reuses native result
+storage and bounded encoding scratch; large result destinations are released
+after sending. Handshakes, replication streams and LOCAL INFILE requests retain
+their required immediate delivery and sequence behavior.</p>
+<p>Clients can negotiate MySQL&#39;s <code>CLIENT_OPTIONAL_RESULTSET_METADATA</code> capability
+to select a lean response without column-definition packets or identifiers:</p>
+<pre><code class="language-sql">SET SESSION resultset_metadata = NONE;
+-- Execute text queries or binary prepared statements using known result types.
+SET SESSION resultset_metadata = FULL;
+</code></pre>
+<p>The connection defaults to <code>FULL</code>; setting <code>NONE</code> without negotiating the
+capability is an error. <code>COM_RESET_CONNECTION</code> restores <code>FULL</code>. In the MySQL C
+API, request <code>MYSQL_OPT_OPTIONAL_RESULTSET_METADATA</code> before connecting or set
+<code>CLIENT_OPTIONAL_RESULTSET_METADATA</code> in <code>mysql_real_connect</code>. A metadata-free
+binary result requires the client to know its column types and order; the server
+does not replace names with a custom type format. Clients can independently
+negotiate <code>CLIENT_DEPRECATE_EOF</code> to omit intermediate EOF packets and receive
+the standard final OK terminator, preserving warnings, transaction and
+multi-result status. See <a href="https://dev.mysql.com/doc/c-api/8.4/en/c-api-optional-metadata.html">MySQL&#39;s optional metadata API</a>.</p>
+<p>The SELECT benchmark&#39;s <code>-api mysql</code> path measures the ordinary Go
+<code>database/sql</code> MySQL driver with full metadata. <code>-api mysql-lean</code> measures a
+separate schema-aware, ordinal wire client with metadata disabled and one
+connection per worker; its throughput includes a different client cost and
+must not be presented as the <code>database/sql</code> result.</p>
 <p><code>CREATE DATABASE</code> / <code>CREATE SCHEMA</code> create virtual namespaces inside the same
 physical LSM. <code>USE</code> changes a connection&#39;s default namespace, including inside a
 transaction; qualified names support cross-schema queries and mutations. The
@@ -280,4 +305,4 @@ escapes, NULLs, ignored header lines and selected columns, including compressed
 and TLS transports. It never opens a server filename or executes PROGRAM.
 Decoders spool typed rows for lock retries; statement time and snapshot remain
 stable, constraints apply normally, and errors roll back the entire import.</p>
-<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/mysql-server.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
+<div class="doc-meta"><span>Rendered from the project documentation · adbd3a6</span><a href="https://github.com/midom/slopdb/blob/main/docs/mysql-server.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

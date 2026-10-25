@@ -38,6 +38,11 @@ for (const document of documents) {
 }
 const functionPages = await functionReferencePages(root);
 const guideCorrections = JSON.parse(await readFile(path.join(root, 'content/guide-corrections.json'), 'utf8'));
+const guideAdditions = JSON.parse(await readFile(path.join(root, 'content/guide-additions.json'), 'utf8'));
+for (const addition of guideAdditions) {
+  if (!documents.includes(addition.source)) throw new Error(`Missing source guide for addition: ${addition.source}`);
+  for (const evidence of addition.evidence) await readFile(path.join(source, evidence), 'utf8');
+}
 for (const page of functionPages) pages.set(page.slug, `@functions/${page.slug}`);
 const grouped = new Set(groups.flatMap(([, links]) => links.map(([slug]) => slug)));
 for (const [label, matches] of [
@@ -80,6 +85,9 @@ for (const [slug, original] of pages) {
     if (markdown.includes(correction.old)) markdown = markdown.replace(correction.old, correction.replacement);
     else if (!markdown.includes(correction.replacement)) throw new Error(`Review outdated guide correction for ${original}`);
   }
+  for (const addition of guideAdditions.filter(item => item.source === original)) {
+    markdown += `\n\n${addition.markdown}\n`;
+  }
   const title = markdown.match(/^#\s+(.+)$/m)?.[1] || slug;
   const usedIds = new Map();
   const renderer = new marked.Renderer();
@@ -104,7 +112,8 @@ for (const [slug, original] of pages) {
     return `<div class="table-scroll">${marked.Renderer.prototype.table.call(this, token)}</div>`;
   };
   const body = marked.parse(markdown, { renderer, gfm: true });
-  await writeFile(path.join(output, `${slug}.html`), shell({ slug, title, body, original }));
+  const credit = guideAdditions.some(item => item.source === original) ? 'Project documentation and source-verified API notes' : undefined;
+  await writeFile(path.join(output, `${slug}.html`), shell({ slug, title, body, original, credit }));
 }
 
 for (const page of functionPages) {
@@ -121,6 +130,6 @@ const cards = [
   ['mysql-cdc', 'Consume committed changes', 'Use row-based MySQL binlog streaming or the native typed changefeed.'],
   ['wordpress', 'WordPress compatibility', 'Read the recorded install, HTTP, restart, and integrity checks and their limits.']
 ];
-const overview = `<h1>A little guidance.<br>A lot of possibilities.</h1><p>SlopDB is an embedded SQL database written in Go. Start with a local database directory, embed it in an application, or enable a SQL protocol listener.</p><p>These guides are rendered directly from the project’s documentation. They describe supported behavior, operational settings, and compatibility limits.</p><div class="guide-grid">${cards.map(([slug, title, description]) => `<a class="guide-card" href="${slug}.html"><h3>${title} ↗</h3><p>${description}</p></a>`).join('')}</div><h2>Start small</h2><p>Build from the repository root with Go 1.22.2 or newer:</p><pre><code>git clone https://github.com/midom/slopdb.git\ncd slopdb\ngo build -o slopdb .\n./slopdb ./example-db</code></pre><h2>Recent additions</h2><ul><li><a href="driver.html">Embedded database/sql driver</a>: path-based engine sharing, isolated pooled sessions, streaming rows, and caller-owned connectors.</li><li><a href="mysql-server.html">MySQL and PostgreSQL listeners</a> can serve one physical database in the same process, with independent session dialects.</li><li><a href="catalogs.html">Shared catalog relations</a> and <a href="activity.html">live activity views</a> expose session-visible metadata, query text, identities, and real lock waits.</li><li><a href="sql-semantics.html#shared-full-text-indexes">Persisted full-text analyzers</a> configure tokenization, normalization, stopwords, and ranking across frontends.</li><li><a href="postgres-compatibility.html">PostgreSQL compatibility updates</a> include snapshot-conflict behavior for REPEATABLE READ, transactional temporary tables, one-statement COPY imports, and additional functions.</li><li><a href="mysql-server.html#session-values-and-live-server-inspection">Session variables, live inspection, and atomic bulk loading</a> include typed user variables, SHOW RAFT STATUS, SHOW LSM STATUS, and LOAD DATA LOCAL INFILE.</li><li><a href="wordpress.html">WordPress</a> and <a href="mediawiki.html">MediaWiki</a> guides record the tested application workflows and remaining compatibility boundaries.</li></ul><h2>Choose your path</h2>${groups.map(([title, links]) => `<h3>${title}</h3><ul>${links.filter(([slug]) => pages.has(slug)).map(([slug, label]) => `<li><a href="${slug}.html">${label}</a></li>`).join('')}</ul>`).join('')}<h2>Performance with context</h2><p>The project includes <a href="testing.html">regression tests and SQL reference fixtures</a>, plus TPC-C-inspired and TPC-H development workloads. These are development benchmarks, not certified TPC scores. Compare runs using matching datasets, concurrency, execution modes, and durability settings.</p>`;
+const overview = `<h1>A little guidance.<br>A lot of possibilities.</h1><p>SlopDB is an embedded SQL database written in Go. Start with a local database directory, embed it in an application, or enable a SQL protocol listener.</p><p>These guides are rendered directly from the project’s documentation. They describe supported behavior, operational settings, and compatibility limits.</p><div class="guide-grid">${cards.map(([slug, title, description]) => `<a class="guide-card" href="${slug}.html"><h3>${title} ↗</h3><p>${description}</p></a>`).join('')}</div><h2>Start small</h2><p>Build from the repository root with Go 1.22.2 or newer:</p><pre><code>git clone https://github.com/midom/slopdb.git\ncd slopdb\ngo build -o slopdb .\n./slopdb ./example-db</code></pre><h2>Recent additions</h2><ul><li><a href="mysql-server.html#queries-and-connections">Lean MySQL responses</a>: negotiated optional result metadata, EOF deprecation, and bounded response buffers for text and prepared queries.</li><li><a href="application-operations.html">Reusable row values</a>: ValuesInto reuses caller-owned slices and BLOB buffers while preserving NULL and empty-BLOB semantics.</li><li><a href="application-operations.html#execute-an-already-parsed-select">Parsed SELECT execution</a>: reusable primary-key point results or a rows fallback under one statement snapshot.</li><li><a href="prepared-statements.html">Retained prepared bindings</a>: session-owned execution trees survive garbage collection, with catalog, statistics, and rollback invalidation.</li><li><a href="driver.html#plain-queries-and-prepared-execution">Direct database/sql text queries</a> avoid allocating prepared-statement pools for calls without arguments.</li><li><a href="application-operations.html#observe-session-shutdown">Session shutdown contexts</a> let protocol adapters cancel blocked response writes after row iteration finishes.</li><li><a href="benchmark-tool-select-bench.html">SELECT benchmark updates</a>: a typed mysql-lean wire control and opt-in server profiles, with explicit client-cost and profiling caveats.</li></ul><h2>Choose your path</h2>${groups.map(([title, links]) => `<h3>${title}</h3><ul>${links.filter(([slug]) => pages.has(slug)).map(([slug, label]) => `<li><a href="${slug}.html">${label}</a></li>`).join('')}</ul>`).join('')}<h2>Performance with context</h2><p>The project includes <a href="testing.html">regression tests and SQL reference fixtures</a>, plus TPC-C-inspired and TPC-H development workloads. These are development benchmarks, not certified TPC scores. Compare runs using matching datasets, concurrency, execution modes, and durability settings.</p>`;
 await writeFile(path.join(output, 'index.html'), shell({ slug: 'index', title: 'Documentation', body: overview }));
 console.log(`Rendered ${pages.size + 1} documentation pages from ${source} (${revision}).`);

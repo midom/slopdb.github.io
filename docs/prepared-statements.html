@@ -17,6 +17,11 @@ owns its mutable programs exclusively, so concurrent executions can build more
 than one template without sharing registers or parameter cells. Pool eviction
 can also cause a rebuild. These counters describe structure reuse, not result
 cache hits or a promise that a particular physical index will always be chosen.</p>
+<p>Statements owned by a session or transaction retain one private binding under
+that session&#39;s execution gate. Garbage collection does not evict this binding;
+catalog/statistics changes and transaction rollback still invalidate its plans.
+Argument references are cleared after each execution. Database-wide shared
+statements keep their concurrent execution-tree pool.</p>
 <pre><code class="language-go">stmt, err := database.Prepare(&quot;SELECT balance FROM customer WHERE w_id=? AND d_id=? AND c_id=?&quot;)
 if err != nil {
     return err
@@ -137,4 +142,7 @@ go run ./cmd/tpcc -workers 10 -duration 1m -prepared=false -json /tmp/slopdb-tpc
 </code></pre>
 <p>WAL stays enabled and WAL fsync remains disabled by default. This is a reduced,
 TPC-C-inspired workload, not a compliant TPC-C score.</p>
-<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/prepared-statements.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
+<h2 id="retained-bindings-for-sql-adapters">Retained bindings for SQL adapters</h2>
+<p>The lower-level <code>sql.PreparedQuery.NewBinding()</code> API creates a <code>*sql.PreparedBinding</code> that retains one private execution tree across garbage collections. <code>PreparedBinding.Bind(args)</code> returns a <code>*sql.BoundQuery</code>; release it with <code>BoundQuery.Release()</code> before binding again. Release clears argument references while retaining reusable plan storage. A binding must have one serialized owner and cannot be used concurrently. Database-wide concurrent callers should use <code>PreparedQuery.Bind</code> instead. Native session and transaction statements manage their own private binding automatically.</p>
+<p>For adapters that already parsed a literal SELECT, <a href="application-operations.html#execute-an-already-parsed-select">parsed-query execution</a> combines reusable point-result storage with a streaming fallback. At the SQL layer, <code>sql.LiteralPointSelectEligible(stmt)</code> is only a syntactic filter. <code>Schema.TrySelectPointInto(stmt, dst)</code> must also prove the lookup against the catalog; callers at this layer must hold the normal statement snapshot and catalog locks. A false handled result has not evaluated SQL, so ordinary execution can follow. Application code should use the session API to obtain those lifecycle guarantees.</p>
+<div class="doc-meta"><span>Project documentation and source-verified API notes · adbd3a6</span><a href="https://github.com/midom/slopdb/blob/main/docs/prepared-statements.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
