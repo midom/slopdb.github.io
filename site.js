@@ -46,3 +46,22 @@ docsToggle?.addEventListener('click', () => {
   const open = document.querySelector('.docs-sidebar').classList.toggle('is-open');
   docsToggle.setAttribute('aria-expanded', String(open));
 });
+
+const functionSearch = document.querySelector('#function-search');
+const functionFamily = document.querySelector('#function-family');
+function filterFunctions() {
+  const terms = functionSearch.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const family = functionFamily.value;
+  let count = 0;
+  document.querySelectorAll('[data-function-row]').forEach(row => {
+    const match = (!family || row.dataset.family === family) && terms.every(term => row.dataset.search.includes(term));
+    row.hidden = !match;
+    if (match) count++;
+  });
+  document.querySelector('#function-count').textContent = `Showing ${count} function ${count === 1 ? 'form' : 'forms'}.`;
+  document.querySelector('#function-empty').hidden = count !== 0;
+}
+if (functionSearch && functionFamily) {
+  functionSearch.addEventListener('input', filterFunctions);
+  functionFamily.addEventListener('change', filterFunctions);
+}

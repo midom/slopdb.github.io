@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="MySQL CDC and replication source — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>MySQL CDC and replication source — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / MYSQL CDC AND REPLICATION SOURCE</p><h1 id="mysql-cdc-and-replication-source">MySQL CDC and replication source</h1>
+<p>SlopDB can stream its committed changes using the MySQL binary-log protocol.
+This is a replication <strong>source</strong>, backed by a durable journal in the native LSM.
+It does not run another storage engine or accept replication from a MySQL source.</p>
+<p>CDC always uses <strong>row-based data changes</strong>: <code>binlog_format=ROW</code> and
+<code>binlog_row_image=FULL</code>. Inserts carry the complete after image, deletes the
+complete before image, and updates both images. SQL DML statements are never
+replayed or substituted for row events; unsupported values produce an error.
+Statement/mixed logging and partial row images are unsupported.</p>
+<p>Schema DDL and transaction markers still use MySQL query events. MySQL logs
+DDL as statements even with ROW logging; those events do not make the data
+stream statement-based. See the <a href="https://dev.mysql.com/doc/refman/8.4/en/replication-options-binary-log.html">MySQL binary logging documentation</a>.</p>
+<p><code>SHOW MASTER STATUS</code>, <code>SHOW BINARY LOG STATUS</code>, a binlog dump, or a replication
+identity-variable query activates the journal. Embedders can call
+<code>Database.EnableCDC(ctx)</code> explicitly. Activation and subsequent records use the
+configured WAL/replication durability. Activation records the initial catalog;
+row history before activation is unavailable. Once enabled, logging continues
+across restarts, including without an active MySQL listener.</p>
+<p>Each journal record corresponds to one committed transaction. Group commit keeps
+the original transaction boundaries. Records contain before/after row images
+and catalog changes in the same atomic storage publication as the data. Rolled
+back writes, secondary-index maintenance and WAL-less temporary tables are
+excluded. Source identity, sequence numbers and timestamps survive recovery,
+backup and native Raft snapshot transfers. Raft replicas receive identical journal
+bytes despite private temporary-table activity on individual nodes.</p>
+<h2 id="wire-interface">Wire interface</h2>
+<p>The source supports <code>COM_BINLOG_DUMP</code>, GTID dump requests with executed-interval
+filtering, and <code>COM_REGISTER_REPLICA</code>. Events include format descriptions,
+previous GTIDs, table maps, full-row version-2 inserts/updates/deletes, query
+events, transaction commits, rotation and heartbeats. Events carry CRC32
+checksums. Consumers can resume using a GTID set or an actual file byte offset;
+files use names such as <code>slopdb-bin.000001</code>. <code>SHOW BINARY LOGS</code> reports file sizes.
+An offset inside an event is rejected.</p>
+<p>Signed/unsigned integer widths, ENUM, binary and UTF-8 strings, fractional
+temporal values, packed DECIMAL and MySQL binary JSON are encoded directly.
+Source cascades appear as explicit row changes; row-event flags prevent a
+destination from applying those cascades twice. A persistent UUID identifies the
+GTID source. The offset index keeps transaction boundaries rather than row
+payloads and is rebuilt deterministically from the journal after restart. Live
+streams wait on commit notifications and heartbeat timers.</p>
+<p>The root schema in events is always <code>main</code>. It remains stable if the configured
+MySQL login database alias changes. Snapshot clients can <code>USE main</code>; other
+virtual schemas retain their names. Create the destination&#39;s <code>main</code> database
+when starting replication from an initially empty source. For an existing
+database, the consumer must arrange a consistent initial snapshot and matching
+CDC position. <code>SHOW MASTER STATUS</code> alone does not make an ordinary concurrent
+SQL dump consistent. FTWRL and automatic snapshot provisioning are unavailable.</p>
+<p>Interoperability tests include independent <code>mysqlbinlog</code> decoding and an actual
+isolated Oracle MySQL 8 replica applying CREATE TABLE, uint64, DECIMAL, JSON,
+large Unicode TEXT, prefix indexes, cascades, INSERT/UPDATE/DELETE and receiver
+restart with GTID auto-positioning. The external-server test is
+optional; raw protocol and recovery tests run in the ordinary Go suite.</p>
+<h2 id="typed-api">Typed API</h2>
+<p><code>Database.NewCDCReader(ctx, afterSequence)</code> resumes immediately after the supplied
+transaction sequence. <code>Read(ctx, limit)</code> returns owned <code>CDCTransaction</code> values
+with typed rows, table definitions, schema changes and namespace deltas.
+<code>Position()</code> advances only after successful decoding. <code>Changes()</code> supplies a
+commit notification channel; capture it before reading, then wait if no records
+are returned. Readers retain no transaction snapshot or execution lock between
+calls. <code>Database.CDCPosition(ctx)</code> returns the current sequence.
+Reads use a soft 16 MiB page budget without splitting a transaction; the first
+transaction is returned whole. Journal records and expanded catalog checkpoints
+have an approximately 256 MiB encoded limit. An oversized change fails before
+WAL publication rather than committing data without its CDC record.</p>
+<h2 id="boundaries">Boundaries</h2>
+<p>The MySQL stream supports pure row transactions and a single compatible table or
+schema DDL event per commit. Native SlopDB permits atomic transactions containing
+multiple DDL statements or both DDL and rows; MySQL&#39;s implicit-DDL transaction
+model cannot preserve that boundary. Such records return error 1236 instead of
+being split or silently changed. ALTER operations that rewrite rows currently
+fall into this boundary. Ambiguous combined column rename/type changes are also
+rejected rather than translated into a destructive DROP/ADD. The typed API
+retains those transactions in full.</p>
+<p>An unsupported retained record also prevents rebuilding the MySQL offset index
+past that record, including status and later resume requests. Plan native DDL
+accordingly when the journal is active. Views, triggers and other native catalog
+objects are not projected as MySQL DDL; their resulting row mutations are logged.
+Destination schema constraints and collations must be compatible. Generated
+table DDL uses UTF-8 binary collation; arbitrary SlopDB Unicode normalization
+collations have no exact MySQL equivalent.</p>
+<p>JSON numbers outside MySQL&#39;s exact DECIMAL limits and TIMESTAMP values outside
+the MySQL uint32 Unix range produce errors rather than lossy events. Binary-log
+files have uint32 positions and transactions cannot cross the file-size limit.
+There is no journal purge/retention configuration, RESET BINARY LOGS, GTID tags,
+semi-synchronous MySQL replication, or MySQL receiver/applier. Journal storage
+and the in-memory transaction-position index grow with retained history.
+CDC observes local committed publications under the selected durability mode.
+If offline recovery discards previously published asynchronous commits, downstream
+consumers need a fresh snapshot; the stream cannot undo an already applied tail.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 0051985</span><span>Source: docs/mysql-cdc.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

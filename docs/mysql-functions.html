@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="MySQL functions — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>MySQL functions — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / MYSQL FUNCTIONS</p><h1 id="mysql-functions">MySQL functions</h1>
+<p>MySQL function validation, execution, prepared-result metadata and optimizer
+volatility share a function registry. Functions work in expressions, predicates,
+prepared statements and persisted views/defaults where those expressions are
+allowed. Native SQLite-style functions retain their existing behavior outside
+MySQL mode; MySQL sessions use MySQL-specific LENGTH, HEX, ROUND and ABS rules.</p>
+<h2 id="function-coverage">Function coverage</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Added functions and syntax</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Strings</td>
+<td>CONCAT_WS, LEFT, RIGHT, LPAD, RPAD, REPEAT, REVERSE, SPACE, INSERT, SUBSTRING_INDEX, MID, LOCATE, POSITION, STRCMP, FIELD, FIND_IN_SET, ELT, MAKE_SET, EXPORT_SET, SOUNDEX, LCASE, UCASE</td>
+</tr>
+<tr>
+<td>Lengths and encodings</td>
+<td>ASCII, ORD, CHAR, CHAR_LENGTH, CHARACTER_LENGTH, OCTET_LENGTH, BIT_LENGTH, UNHEX, TO_BASE64, FROM_BASE64</td>
+</tr>
+<tr>
+<td>Regular expressions</td>
+<td>REGEXP_LIKE, REGEXP_INSTR, REGEXP_SUBSTR, REGEXP_REPLACE</td>
+</tr>
+<tr>
+<td>Exact numbers and formatting</td>
+<td>CEIL, CEILING, FLOOR, SIGN, TRUNCATE, MOD, CONV, BIN, OCT, BIT_COUNT, CRC32, FORMAT, exact MySQL ROUND and ABS</td>
+</tr>
+<tr>
+<td>Math</td>
+<td>PI, POW, POWER, SQRT, EXP, LN, LOG, LOG2, LOG10, SIN, COS, TAN, ASIN, ACOS, ATAN, ATAN2, COT, DEGREES, RADIANS, RAND</td>
+</tr>
+<tr>
+<td>Date components</td>
+<td>YEAR, MONTH, DAY, DAYOFMONTH, DAYOFWEEK, DAYOFYEAR, WEEKDAY, QUARTER, WEEK, WEEKOFYEAR, YEARWEEK, DAYNAME, MONTHNAME, LAST_DAY</td>
+</tr>
+<tr>
+<td>Date arithmetic</td>
+<td>DATE_ADD, DATE_SUB, ADDDATE, SUBDATE, TIMESTAMPADD, TIMESTAMPDIFF, DATEDIFF, PERIOD_ADD, PERIOD_DIFF, EXTRACT</td>
+</tr>
+<tr>
+<td>Time values</td>
+<td>HOUR, MINUTE, SECOND, MICROSECOND, ADDTIME, SUBTIME, TIMEDIFF, TIME_TO_SEC, SEC_TO_TIME, MAKETIME</td>
+</tr>
+<tr>
+<td>Formatting and calendars</td>
+<td>DATE_FORMAT, TIME_FORMAT, STR_TO_DATE, MAKEDATE, FROM_DAYS, TO_DAYS, TO_SECONDS, FROM_UNIXTIME</td>
+</tr>
+<tr>
+<td>Clocks</td>
+<td>CURDATE, CURRENT_DATE, UTC_DATE, CURTIME, CURRENT_TIME, UTC_TIME, UTC_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP</td>
+</tr>
+<tr>
+<td>Digests and encryption</td>
+<td>MD5, SHA, SHA1, SHA2, RANDOM_BYTES, AES_ENCRYPT, AES_DECRYPT</td>
+</tr>
+<tr>
+<td>Compression</td>
+<td>COMPRESS, UNCOMPRESS, UNCOMPRESSED_LENGTH</td>
+</tr>
+<tr>
+<td>UUIDs</td>
+<td>UUID, IS_UUID, UUID_TO_BIN, BIN_TO_UUID</td>
+</tr>
+<tr>
+<td>Network addresses</td>
+<td>INET_ATON, INET_NTOA, INET6_ATON, INET6_NTOA, IS_IPV4, IS_IPV6, IS_IPV4_COMPAT, IS_IPV4_MAPPED</td>
+</tr>
+<tr>
+<td>Session and utility functions</td>
+<td>USER, SESSION_USER, SYSTEM_USER, SCHEMA, LAST_INSERT_ID, ROW_COUNT, FOUND_ROWS, IS_USED_LOCK, RELEASE_ALL_LOCKS, ISNULL, CHARSET, COLLATION, SLEEP, BENCHMARK</td>
+</tr>
+</tbody></table>
+</div><p>These extend the previously supported IF, GREATEST, LEAST, CONCAT, SUBSTRING,
+NOW, SYSDATE, CURRENT_TIMESTAMP, UNIX_TIMESTAMP, CONVERT, named locks and JSON
+functions. SQL forms include <code>POSITION(x IN y)</code>, <code>SUBSTRING(x FROM n FOR count)</code>,
+<code>TRIM(BOTH x FROM y)</code>, <code>CHAR(... USING utf8mb4)</code>,
+<code>EXTRACT(YEAR_MONTH FROM value)</code> and <code>DATE_ADD(value, INTERVAL n MONTH)</code>.
+Canonical persisted expressions reparse through the same function validation.</p>
+<h2 id="behavior">Behavior</h2>
+<p>TEXT string positions count Unicode code points; BLOB operations count bytes.
+Function-specific NULL and binary-result rules are preserved. UTF-8 charset
+aliases utf8, utf8mb3 and utf8mb4 all accept full Unicode, as elsewhere in SlopDB.
+Invalid UTF-8 conversions still fail. Explicit collations and SlopDB&#39;s configured
+text collation continue to control comparisons.</p>
+<p>DECIMAL rounding and truncation stay exact, including values beyond float64&#39;s
+integer precision. Exact decimal ROUND ties round away from zero; approximate
+DOUBLE ties use nearest-even. Scientific literals remain approximate in MySQL
+mode. Integer arguments distinguish exact numbers, approximate numbers and
+integer prefixes of strings. FORMAT supports the documented MySQL locale names,
+with checked-in punctuation/grouping answers from an independent MySQL server.</p>
+<p>Calendar arithmetic clamps month-end dates, handles leap years and supports all
+eight WEEK modes. Time arithmetic preserves signed durations up to the MySQL
+838-hour range and handles fractional seconds. The session timezone remains UTC.
+Temporal results use SlopDB&#39;s existing TEXT representation.</p>
+<p>RAND uses MySQL&#39;s seed/generator rules. Constant seeded expressions advance
+privately across rows; column-dependent seeds are applied per row. Statement
+state is released after success or failure and prepared executions start a fresh
+seeded sequence. Random, clock, locking, session and blocking functions are
+classified as volatile, preventing constant caching or unsafe predicate reuse.</p>
+<p>LAST_INSERT_ID records the first generated ID of a multi-row insert, preserves
+uint64 values, ignores explicitly assigned IDs, isolates trigger changes and
+survives transaction rollback. LAST_INSERT_ID(expr) updates the connection value.
+ROW_COUNT reports affected rows or -1 for a result-producing statement.
+FOUND_ROWS reports the preceding SELECT&#39;s returned row count; SQL_CALC_FOUND_ROWS
+is not implemented. SLEEP waits on a timer; SLEEP and BENCHMARK honor native query
+cancellation and deadlines.</p>
+<p>Generated strings, padding, formatting and decompression check the query memory
+budget before allocating expanded results. Invalid arities fail even on empty
+inputs. Hashes and UUID/IP conversion return text or binary values with matching
+prepared metadata. AES functions currently implement MySQL&#39;s default
+aes-128-ecb behavior and padding; other block modes and KDF arguments are not
+implemented. COMPRESS uses MySQL&#39;s length-prefix/zlib format and reads MySQL
+compressed values; compressed byte sequences may differ between zlib encoders.</p>
+<p>Regular-expression functions support character positions, occurrence selection,
+capture replacements and match flags, with a bounded statement-local compiled
+pattern cache. They use RE2. Lookarounds and pattern backreferences produce an
+unsupported-pattern error. Unicode line-ending and end-anchor rules retain RE2
+semantics; anchored SUBSTR/REPLACE patterns at a noninitial position are rejected.
+This is not a complete implementation of MySQL&#39;s ICU regular-expression engine.</p>
+<h2 id="verification-and-boundaries">Verification and boundaries</h2>
+<p>Permanent tests cover NULLs, Unicode and binary values, exact decimals, uint64,
+coercion, prepared calls, metadata, cancellation, memory budgets and persisted
+views. Oracle MySQL 8.0.46 supplies independent fixed and generated reference
+answers. The normal suite uses checked-in answers; it does not require MySQL.
+The independent scalar fixture covers 360 cases through both text and prepared
+MySQL protocol execution. Regenerate it against an isolated Oracle MySQL server
+using <code>scripts/regenerate_mysql_function_references.py --socket /path/to/socket</code>.
+The generator obtains answers only from that server.</p>
+<p>This is an implementation of the listed functions, not a complete emulation of
+every MySQL function, sql_mode, warning, collation or temporal coercion. Native
+invalid-value, overflow and cancellation policies remain in effect where noted.
+CONVERT_TZ, locale-dependent date-name settings, automatic numeric-context
+conversion of temporal TEXT values, uncommon year-zero arithmetic and additional
+cryptographic modes remain outside this function set.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 0051985</span><span>Source: docs/mysql-functions.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

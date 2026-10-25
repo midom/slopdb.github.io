@@ -1,0 +1,28 @@
+.documentation{scroll-behavior:auto}
+.function-provenance{border-left:3px solid #9dc54d;padding:9px 15px;background:#eaf0df;font-size:12px!important;line-height:1.85!important}
+.function-compat-note{border:1px solid #d1dcc4;border-radius:4px;background:#eef3e6;padding:12px 15px;margin-block:20px}
+.function-compat-note summary{cursor:pointer;font-size:12px;font-weight:600;color:#486331}
+.doc-article .function-compat-note p{font-size:12px;line-height:1.85}
+.function-search-controls{display:grid;grid-template-columns:1.7fr 1fr;gap:15px;margin-top:23px}
+.function-search-controls>div{min-width:0}
+.function-search-controls label{display:block;font-size:11px;font-weight:600;color:#5e6b4e;margin-bottom:7px}
+.function-search-controls input,.function-search-controls select{width:100%;min-width:0;border:1px solid #cbd6bc;border-radius:4px;background:#fafbf6;color:#354526;padding:12px 13px;font-family:var(--sans);font-size:12px;line-height:1.5}
+.doc-article .function-count{font:10px/1.8 var(--mono);color:#69795a;margin-block:15px}
+.doc-article .function-index{margin-top:7px}
+.doc-article .function-index td:first-child{min-width:180px}
+.doc-article .function-index td{font-size:11px;line-height:1.7}
+.doc-article .function-index tr:hover td{background:#eef4e5}
+.function-group-links{display:flex;flex-wrap:wrap;gap:8px;margin:30px 0 16px}
+.doc-article .function-group-links a{font-size:11px;padding:6px 11px;border:1px solid #cedabd;border-radius:4px;background:#edf3e4;text-decoration:none;line-height:1.7}
+.doc-article .function-group-links a:hover{background:#dfeacb;border-color:#9ebc77}
+.function-entry{border-top:1px dashed #d1dbc4;padding-block:22px 3px;scroll-margin-top:25px;min-width:0}
+.function-entry h3{margin:0 0 10px;font-size:16px;line-height:1.85;letter-spacing:-.3px;overflow-wrap:anywhere}
+.doc-article .function-entry h3 code{background:transparent;padding:0;color:#385823;font-size:14px}
+.doc-article .function-result{font:10px/1.8 var(--mono);color:#738162;margin:0 0 15px}
+.doc-article .function-entry p{font-size:13px}
+.doc-article .function-entry .function-note{font-size:12px;color:#737d67;border-left:2px solid #c6d5b1;padding-left:12px}
+.doc-article .function-entry pre{font-size:11px;margin-block:16px 9px}
+.doc-article .function-source{font-size:10px;line-height:1.8;color:#748567;text-decoration:none;overflow-wrap:anywhere;display:inline-block;margin-bottom:12px}
+.doc-article .function-source:hover{text-decoration:underline;color:#456729}
+@media(max-width:800px){.function-search-controls{grid-template-columns:1fr}.function-entry h3{font-size:14px}.doc-article .function-entry h3 code{font-size:13px}}
+@media(max-width:560px){.function-provenance{font-size:11px!important}.doc-article .function-entry p{font-size:12px}.doc-article .function-entry h3 code{font-size:12px}.doc-article .function-entry pre{font-size:10px}.function-entry{padding-top:19px}}

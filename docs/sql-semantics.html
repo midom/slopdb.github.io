@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SQL integrity and execution behavior — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>SQL integrity and execution behavior — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html" aria-current="page">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SQL INTEGRITY AND EXECUTION BEHAVIOR</p><h1 id="sql-integrity-and-execution-behavior">SQL integrity and execution behavior</h1>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SQL integrity and execution behavior — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>SQL integrity and execution behavior — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html" aria-current="page">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SQL INTEGRITY AND EXECUTION BEHAVIOR</p><h1 id="sql-integrity-and-execution-behavior">SQL integrity and execution behavior</h1>
 <p>SlopDB implements a subset of SQL with SQLite and MySQL extensions. These rules
 make supported operations enforce their declared meaning; they do not claim full
 ISO SQL conformance.</p>
@@ -19,7 +19,8 @@ still present. Deleted high IDs can therefore be used again. IDs stay reserved
 within one open instance. Row data still uses the selected WAL and fsync mode.
 The option applies to all automatic-ID columns in that open instance. Previously
 stored counters are ignored for allocation while this option is enabled.</p>
-<p>All columns enforce their declared INTEGER, REAL, TEXT, or BLOB type after the
+<p>All columns enforce their declared INTEGER, unsigned integer, REAL, DECIMAL,
+JSON, TEXT, or BLOB type after the
 existing affinity conversions. <code>VARCHAR(n)</code> uses TEXT storage and collation,
 but limits the stored value to <code>n</code> Unicode code points. <code>VARBINARY(n)</code> uses BLOB
 storage and limits the value to <code>n</code> bytes. Both require a positive integer length,
@@ -33,6 +34,21 @@ and an INTEGER can become REAL, but arbitrary text cannot be stored in an
 INTEGER column. Point updates and general DML follow the same rules. UNIQUE
 continues to permit multiple NULL values, and CHECK accepts UNKNOWN as well as
 TRUE.</p>
+<p>Signed integer values use int64 and unsigned values use uint64, including keys,
+aggregates, parameters and generated IDs. Declared MySQL integer widths enforce
+their signed/unsigned bounds. DECIMAL supports precision up to 65 and scale up to
+30, with exact comparisons, arithmetic and index keys. Assignment rounds to the
+declared scale and checks overflow atomically. Native REAL expressions still
+return float64; source numeric literals preserve exact spelling through DECIMAL
+assignment and casts. MySQL integer division with <code>/</code> returns DECIMAL, including
+four fractional digits for integer operands; native integer division retains
+the native integer behavior.</p>
+<p>JSON validates UTF-8 documents, preserves exact JSON numbers and supports nested
+objects/arrays. Functions include JSON_EXTRACT, JSON_VALUE, JSON_SET,
+JSON_INSERT, JSON_REPLACE, JSON_REMOVE, JSON_ARRAY, JSON_OBJECT, JSON_CONTAINS,
+JSON_OVERLAPS, JSON_MERGE_PATCH and JSON_MERGE_PRESERVE. <code>-&gt;</code> / <code>-&gt;&gt;</code> provide JSON
+and text access, with <code>#&gt;</code> / <code>#&gt;&gt;</code> path-array access. JSON depth is limited to 100.
+JSON is not a PostgreSQL JSONB implementation and does not supply JSON_TABLE.</p>
 <p>Increasing a VARCHAR or VARBINARY length with <code>ALTER COLUMN ... TYPE</code> updates
 catalog metadata without rewriting rows or indexes. A shorter length checks
 existing rows by default. <code>ALLOW EXISTING</code> makes a shorter length apply to new
@@ -57,13 +73,22 @@ unique index are rejected. Referenced parent rows are locked until transaction
 completion, including UNIQUE-key references, so concurrent child inserts and
 parent changes cannot both commit an orphan. Failed statements roll back their
 writes. Renames preserve references, and transaction rollback restores the
-original constraint metadata.</p>
-<p>ON DELETE / ON UPDATE NO ACTION and RESTRICT are accepted with immediate
-statement validation. CASCADE, SET NULL, SET DEFAULT, deferred constraints, and
-other unsupported constraint options are rejected explicitly. Existing foreign
-key data is not scanned or repaired automatically on open; older versions did
-not enforce those references. New writes and changes to referenced parents are
-validated.</p>
+original constraint metadata. Prefix-only UNIQUE indexes are not candidate keys
+for foreign-key references.</p>
+<p>ON DELETE / ON UPDATE CASCADE, SET NULL and SET DEFAULT update dependent rows
+atomically, maintaining indexes and constraints recursively. SET NULL requires
+nullable child columns; SET DEFAULT uses each column default (or NULL), and fails
+if the resulting value has no parent or violates another constraint. NO ACTION
+and RESTRICT normally validate at statement end. RESTRICT remains immediate
+when its constraint is deferred. Cascades run immediately even for deferred keys.</p>
+<p>DEFERRABLE INITIALLY DEFERRED postpones reference validation until COMMIT;
+DEFERRABLE INITIALLY IMMEDIATE starts with statement checks. Within a transaction,
+SET CONSTRAINTS ALL or a comma-separated list of constraint names changes those
+modes. Switching to IMMEDIATE validates pending writes atomically; a failed
+switch preserves the prior modes. Savepoint rollback restores constraint modes
+and writes. A deferred validation failure leaves the transaction open so callers
+can fix the reference or roll back. Existing foreign-key data is not scanned or
+repaired automatically on open; new writes and changed parents are validated.</p>
 <h2 id="expressions-and-grouping">Expressions and grouping</h2>
 <p>Scalar subqueries return NULL for zero rows, a value for one row and one column,
 and an error for extra rows or columns. Division by zero, integer overflow,
@@ -154,4 +179,4 @@ run with WAL enabled and fsync disabled, including all fifteen consistency
 checks before and after close/reopen. Results are documented with the load
 <a href="https://github.com/midom/slopdb/blob/main/cmd/tpcc/README.md">tester</a>.</p>
 <p><code>INSERT ... ON CONFLICT</code> supports explicit PRIMARY KEY/UNIQUE targets, DO NOTHING, and DO UPDATE with excluded values and an optional WHERE. See <a href="upsert.html">UPSERT semantics</a> for constraints, triggers, concurrency, generated IDs, and supported target syntax.</p>
-<div class="doc-meta"><span>Rendered from the project documentation · 11b3940</span><a href="https://github.com/midom/slopdb/blob/main/docs/sql-semantics.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
+<div class="doc-meta"><span>Rendered from the project documentation · 0051985</span><span>Source: docs/sql-semantics.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

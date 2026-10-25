@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="MediaWiki compatibility — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>MediaWiki compatibility — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / MEDIAWIKI COMPATIBILITY</p><h1 id="mediawiki-compatibility">MediaWiki compatibility</h1>
+<p>SlopDB&#39;s MySQL endpoint can install and run the unmodified MediaWiki 1.46.2
+release. The compatibility work was checked on the <code>test</code> machine with PHP
+8.5.4, a fresh database, the stock installer and the stock MySQL driver.</p>
+<p>Every table uses SlopDB&#39;s LSM storage. <code>CREATE TABLE ... ENGINE=...</code> and
+<code>ALTER TABLE ... ENGINE=...</code> accept and ignore the requested name, including
+unrecognized engine names. <code>SHOW ENGINES</code>, <code>SHOW TABLE STATUS</code>, MySQL
+<code>SHOW CREATE TABLE</code> and <code>information_schema.tables</code> report <code>LSM</code>. There are no
+InnoDB or MyISAM storage implementations or engine-dependent search modes.</p>
+<h2 id="implemented-compatibility">Implemented compatibility</h2>
+<p>The core schema&#39;s 64 tables now work, including integer type declarations and
+unsigned bounds, <code>AUTO_INCREMENT</code>, fixed padded <code>BINARY</code>, <code>VARBINARY</code>, the
+TEXT/BLOB families, <code>ENUM</code>, floating point declarations and fractional temporal
+values. MySQL sessions convert strings to binary columns, apply the supported
+strict/nonstrict assignment rules and preserve native API behavior outside
+MySQL mode. Insert-ignore warnings and MySQL changed/matched row counts are
+available through the protocol.</p>
+<p>Query additions include <code>IF</code>, <code>GREATEST</code>/<code>LEAST</code>, MySQL casts, character-set
+conversion, <code>CONCAT</code>, <code>SUBSTRING</code>, fractional timestamps, <code>UNIX_TIMESTAMP</code>,
+ordered/distinct/multiple-argument <code>GROUP_CONCAT</code>, Unicode general-ci expression
+collations, grouped joins, index hints and <code>STRAIGHT_JOIN</code>. Joined UPDATE and
+DELETE collect distinct physical target rows before applying normal constraints,
+triggers and index maintenance. <code>CREATE TABLE LIKE</code> copies schema definitions
+and visible index names into independently owned catalog objects.</p>
+<p>Session-private temporary tables support ordinary queries, joins, indexes and
+transactional row changes. Definitions survive transaction rollback and disappear
+when the session closes or resets. Their rows and indexes occupy a reserved
+range in the same LSM, bypass the WAL and replication, and are removed on
+shutdown and on restart. They may spill to SSTables; they are not a separate
+in-memory storage engine.</p>
+<p><code>FULLTEXT</code> declarations persist and <code>MATCH ... AGAINST</code> executes natural-language
+and Boolean searches, including required/excluded terms, prefixes, phrases and
+groups. Searches respect statement snapshots, private transaction changes,
+cancellation and query budgets. Search terms use a four-character minimum and
+the documented stopword vocabulary in the source. An inverted index stores term
+postings and positions in the LSM. Selective searches fetch candidate documents
+from those postings; corpus statistics use lightweight document markers.
+Relevance scores are SlopDB&#39;s own scores, not an emulation of either MySQL
+storage engine&#39;s scoring algorithm.</p>
+<p>The endpoint also supplies the installer/session settings, named locks with real
+cross-connection ownership and waits, warning packets and <code>SHOW WARNINGS</code>,
+<code>CLIENT_FOUND_ROWS</code>, declared prepared-result types, MySQL-shaped EXPLAIN rows,
+and the system-catalog views used by MediaWiki. Login accounts and password
+hashes persist; permission checks are disabled. Additional databases are virtual
+schemas in the same physical LSM, and <code>USE</code> changes default name resolution.
+Qualified joins and transactionally switching schemas are supported. See
+<a href="mysql-server.html">MySQL server</a> for protocol and replication details.</p>
+<h2 id="verification">Verification</h2>
+<p>The permanent <code>TestMediaWikiCoreSchemaAndWorkflows</code> regression loads the complete
+release schema from <a href="https://github.com/midom/slopdb/blob/main/tests/regression/testdata/mediawiki/README.md">the checked-in factual fixture</a>,
+checks binary prefix searches, group concatenation, fulltext joins and quoted
+revision-ID deletion/restoration, then closes and reopens the database and checks
+integrity. Other ordinary Go tests cover parser errors, typed prepared execution,
+assignment failures, temporary isolation, joined mutations, schema copies,
+collation weights, account/grant persistence and named-lock concurrency.</p>
+<p>The optional HTTP runner verifies actual application results:</p>
+<pre><code class="language-sh">python3 scripts/mediawiki_acceptance.py \
+  --base-url http://127.0.0.1:33882 --username Admin \
+  --password-file /private/admin-password --report /tmp/mediawiki-acceptance.json
+</code></pre>
+<p>It creates a uniquely named page and account. Checks include login, two edits,
+revision content, body and prefix search, category membership, recent changes,
+protection, move, deletion, complete restoration, watchlists, administrator group
+names, contributions, backlinks, account creation and seven special pages. The
+report removes password/token fields. The runner needs a separately installed
+wiki and is not required by <code>go test ./...</code>.</p>
+<p>On the test machine, installation and the HTTP checks passed against a fresh
+SlopDB database. The stock <code>maintenance/run.php update --quick</code> and <code>runJobs --maxjobs=100</code>
+commands also passed, followed by the HTTP checks after a server restart. Binaries, databases, private logs and reports
+remain outside this repository.</p>
+<h2 id="boundaries">Boundaries</h2>
+<p>This covers the core application&#39;s audited requirements, not complete MySQL
+compatibility or arbitrary extensions. Signed integers retain exact int64 values;
+unsigned integers cover the complete uint64 range. Unique and nonunique prefix
+indexes use character prefixes for TEXT and byte prefixes for binary columns,
+including uniqueness checks and residual query predicates. Unicode charset
+conversion maps utf8, utf8mb3 and utf8mb4 to full Unicode, without imposing the
+three-byte restriction; invalid UTF-8 is still rejected. Other character
+encodings are not silently rewritten. DECIMAL has exact decimal arithmetic and
+up to 65 digits; JSON validates documents and supplies functions and path accessors.</p>
+<p>MySQL sessions default to REPEATABLE READ: ordinary SELECTs retain the first
+consistent-read snapshot, while locking reads and mutations use current committed
+data plus private writes. READ COMMITTED remains available and is the native API
+default. Ordinary DDL retains SlopDB&#39;s
+transactional semantics. Joined mutations require physical source tables;
+derived mutation sources are rejected. Temporary foreign keys are unsupported.
+Persistent foreign keys support composite/self references, CASCADE, SET NULL,
+SET DEFAULT and deferred checks. MATCH FULL/PARTIAL and MySQL gap locks are not
+implemented.
+Stored routines, general MySQL system schemas and other protocol limits are
+listed in <a href="mysql-server.html">MySQL server</a>.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 0051985</span><span>Source: docs/mediawiki.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
