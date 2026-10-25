@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="One full Raft node and two logs-only voters — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>One full Raft node and two logs-only voters — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html" aria-current="page">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / ONE FULL RAFT NODE AND TWO LOGS-ONLY VOTERS</p><h1 id="one-full-raft-node-and-two-logs-only-voters">One full Raft node and two logs-only voters</h1>
+<p>Measured on SSH host <code>test</code>, 2026-10-24, using production commit <code>11b39400f663</code> plus the benchmark extension in <code>replication/throughput_benchmark_test.go</code>. Three repetitions per cell; throughput and latency columns are medians of the per-run statistics.</p>
+<p>The requested topology uses one full SQL leader and two logs-only voters: three voters, a majority of two. Each sample verifies that membership before timing. A matched three-full-node quorum uses the same fixture, iteration count, durability mode, worker count and runtime settings.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th align="right">Clients</th>
+<th align="right">One full + two journals, tx/s</th>
+<th align="right">Run range, tx/s</th>
+<th align="right">p50, ms</th>
+<th align="right">p95, ms</th>
+<th align="right">p99, ms</th>
+<th align="right">Three full, tx/s</th>
+<th align="right">Difference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>sync</td>
+<td align="right">1</td>
+<td align="right">212</td>
+<td align="right">206–217</td>
+<td align="right">4.662</td>
+<td align="right">5.451</td>
+<td align="right">5.944</td>
+<td align="right">216</td>
+<td align="right">-1.7%</td>
+</tr>
+<tr>
+<td>sync</td>
+<td align="right">16</td>
+<td align="right">834</td>
+<td align="right">826–836</td>
+<td align="right">18.240</td>
+<td align="right">31.730</td>
+<td align="right">39.060</td>
+<td align="right">825</td>
+<td align="right">+1.1%</td>
+</tr>
+<tr>
+<td>sync</td>
+<td align="right">64</td>
+<td align="right">2,761</td>
+<td align="right">2,692–2,816</td>
+<td align="right">20.710</td>
+<td align="right">42.150</td>
+<td align="right">51.900</td>
+<td align="right">2,863</td>
+<td align="right">-3.6%</td>
+</tr>
+<tr>
+<td>sync</td>
+<td align="right">128</td>
+<td align="right">4,778</td>
+<td align="right">4,605–4,801</td>
+<td align="right">24.260</td>
+<td align="right">44.890</td>
+<td align="right">59.450</td>
+<td align="right">4,660</td>
+<td align="right">+2.5%</td>
+</tr>
+<tr>
+<td>async</td>
+<td align="right">1</td>
+<td align="right">1,609</td>
+<td align="right">1,608–1,619</td>
+<td align="right">0.580</td>
+<td align="right">0.676</td>
+<td align="right">2.307</td>
+<td align="right">1,617</td>
+<td align="right">-0.5%</td>
+</tr>
+<tr>
+<td>async</td>
+<td align="right">16</td>
+<td align="right">15,491</td>
+<td align="right">15,408–15,503</td>
+<td align="right">0.907</td>
+<td align="right">1.574</td>
+<td align="right">4.848</td>
+<td align="right">15,337</td>
+<td align="right">+1.0%</td>
+</tr>
+<tr>
+<td>async</td>
+<td align="right">64</td>
+<td align="right">27,036</td>
+<td align="right">26,911–27,257</td>
+<td align="right">2.124</td>
+<td align="right">4.479</td>
+<td align="right">7.781</td>
+<td align="right">26,484</td>
+<td align="right">+2.1%</td>
+</tr>
+<tr>
+<td>async</td>
+<td align="right">128</td>
+<td align="right">32,431</td>
+<td align="right">32,215–32,756</td>
+<td align="right">3.538</td>
+<td align="right">7.340</td>
+<td align="right">11.820</td>
+<td align="right">32,005</td>
+<td align="right">+1.3%</td>
+</tr>
+</tbody></table>
+</div><p>The small row-update workload shows similar throughput with the two topologies. The observed median differences span -3.6% to +2.5%. Three repetitions describe run variation; they do not establish statistical significance.</p>
+<h2 id="workload-and-machine">Workload and machine</h2>
+<ul>
+<li>60 ARM Neoverse-N1 vCPUs, about 59 GiB RAM; Linux arm64, Go 1.22.2.</li>
+<li>All three Raft members share one Go process on one machine; authenticated TCP loopback, TLS off. SQL runs through independent native sessions.</li>
+<li><code>GOMAXPROCS=60</code>, <code>GOGC=100</code>, default storage options, WAL recording and fsync capability enabled on every application and consensus store.</li>
+<li>Databases use <code>TMPDIR=/home/ubuntu/slopdb-bench-data/raft-journals-20261024</code> on ext4 <code>/dev/sda1</code>. The host’s <code>/tmp</code> is tmpfs and was used only for binaries/reports, not timed databases.</li>
+<li>Fixture: 128 counters with integer primary keys, initially zero. Every client repeatedly executes one explicit transaction with one prepared primary-key increment, on a row private to that client. Latency includes BEGIN, UPDATE and COMMIT.</li>
+<li>Sync commits wait for the normal durable Raft quorum and leader application. Async commits use the normal replication/application acknowledgment path with periodic durability certification (100 ms interval, 1 s maximum lag). A final stable barrier is outside timing.</li>
+<li>Fresh fixture/cluster for each measured sample; startup, promotion, rollback warmup, SQL preparation, validation, shutdown and recovery are outside timing. Samples run serially. The second repetition reverses cell and topology order.</li>
+</ul>
+<h2 id="validation">Validation</h2>
+<p>Every measured sample passed exact per-row and total committed-update checks and logical integrity checks. Full followers match the leader snapshot. Each journal is separately rebuilt from its own opaque snapshot and retained committed WAL, then its full SQL data and integrity are checked; the async hash chain and certified endpoint are also verified. Sync cold restart and async fenced stable-point recovery preserve the totals. There were no failed measured samples.</p>
+<p>Before timing, role/proposal tests and benchmark smoke cases passed with the race detector, and <code>go vet ./replication</code> and <code>git diff --check</code> passed. Unix-socket validation uses a short disk-backed TMPDIR to stay within socket path limits. Timed runs use an ordinary non-race binary.</p>
+<h2 id="reproduce">Reproduce</h2>
+<p>Build a test binary from this benchmark source, create a disk-backed temporary directory, and run matching cases serially. For example:</p>
+<pre><code class="language-sh">mkdir -p /var/tmp/sdb-rbench /tmp/slopdb-bench
+go test -c -o /tmp/slopdb-bench/replication.test ./replication
+TMPDIR=/var/tmp/sdb-rbench GOMAXPROCS=60 GOGC=100 \
+  /tmp/slopdb-bench/replication.test -test.run &quot;^$&quot; \
+  -test.bench &quot;^BenchmarkRaftLogsOnlyTransactions$/^raft3-async$/^workers128$&quot; \
+  -test.benchtime=250000x -test.count=3 -test.timeout=10m
+</code></pre>
+<p>For the full-node control select <code>BenchmarkRaftTransactions</code>; sync mode is <code>raft3</code>, async mode is <code>raft3-async</code>. The measured iteration counts per sample were:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">Clients</th>
+<th align="right">Sync iterations</th>
+<th align="right">Async iterations</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td align="right">1,600</td>
+<td align="right">12,000</td>
+</tr>
+<tr>
+<td align="right">16</td>
+<td align="right">18,000</td>
+<td align="right">160,000</td>
+</tr>
+<tr>
+<td align="right">64</td>
+<td align="right">25,000</td>
+<td align="right">250,000</td>
+</tr>
+<tr>
+<td align="right">128</td>
+<td align="right">25,000</td>
+<td align="right">250,000</td>
+</tr>
+</tbody></table>
+</div><p>Timed binary SHA256: <code>a33c22894cab89573c77600b66abc7f3ca4d06c92fb3a40bf2c033593a22ac56</code>.</p>
+<p><a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/raft/2026-10-24/logs-only-results.json">Machine metadata, commands, source fingerprints and all 48 samples</a>. Raw logs and build/source artifacts are retained outside the repository under <code>/tmp/slopdb-bench/raft-journals-20261024/</code> locally and <code>/tmp/slopdb-bench/slopdb-raft-journals-20261024/</code> on <code>test</code>.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/benchmarks/raft/2026-10-24/logs-only.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

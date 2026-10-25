@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Random UPDATE above one million transactions/s — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Random UPDATE above one million transactions/s — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html" aria-current="page">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / RANDOM UPDATE ABOVE ONE MILLION TRANSACTIONS/S</p><h1 id="random-update-above-one-million-transactionss">Random UPDATE above one million transactions/s</h1>
+<h2 id="result">Result</h2>
+<p>The target passed at 400 and 600 concurrent writers. All three 30-second samples at each writer count exceeded 1,000,000 committed transactions/s. Each transaction changes one row. WAL is enabled; WAL fsync is disabled for the main table.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">Writers</th>
+<th align="right">Median transactions/s</th>
+<th>Three timed samples</th>
+<th align="right">Mean busy cores</th>
+<th align="right">Transactions/WAL group</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">96</td>
+<td align="right">737,267</td>
+<td>747,223 / 735,512 / 737,267</td>
+<td align="right">15.47</td>
+<td align="right">42.1</td>
+</tr>
+<tr>
+<td align="right">200</td>
+<td align="right">942,113</td>
+<td>942,113 / 928,714 / 949,316</td>
+<td align="right">19.20</td>
+<td align="right">87.3</td>
+</tr>
+<tr>
+<td align="right">400</td>
+<td align="right">1,022,749</td>
+<td>1,022,749 / 1,036,446 / 1,016,982</td>
+<td align="right">20.47</td>
+<td align="right">177.2</td>
+</tr>
+<tr>
+<td align="right">600</td>
+<td align="right">1,052,145</td>
+<td>1,053,128 / 1,043,737 / 1,052,145</td>
+<td align="right">21.12</td>
+<td align="right">254.0</td>
+</tr>
+</tbody></table>
+</div><p>At 200 writers, the median rose from 405,660 before this goal to 942,113. The write buffer changed from 4 to 8 MiB. Both measurements use three 30-second samples, a 10-second warm-up, and the same saved data and update range. The 200-writer result remains below one million/s; the target requires more writers in this test.</p>
+<p>At 600 writers, WAL groups average near the 256-transaction limit. More writers give little extra throughput over 400 writers. The ordered publication path and caller wake cost still limit scaling.</p>
+<h2 id="test-conditions">Test conditions</h2>
+<ul>
+<li>Machine: 96 virtual AMD EPYC Genoa CPUs; Go 1.26.7.</li>
+<li><code>GOMAXPROCS=96</code>, <code>GOGC=200</code>. No run sets GOGC above 200.</li>
+<li>20 GiB maximum mmap block cache, 8 MiB write buffer, eight background compaction jobs.</li>
+<li>Rows have an 8-byte ID, an 8-byte value, and a 64-byte BLOB: 80 logical bytes, 84 bytes in the SQL encoding.</li>
+<li>One session per writer. Each writer uses a shared prepared SQL statement with private bindings.</li>
+<li>SQL: <code>UPDATE bench SET v=v+1 WHERE id=?</code>. Keys are random existing integer IDs from 1 through 1,000,000.</li>
+<li>Each case uses a fresh Btrfs copy of the saved 10 GB database, with 138,864,149 total rows. The one-million-row update range is read into the cache before timing.</li>
+<li>The main table has three consecutive 30-second samples after a 10-second warm-up. The samples share one database for that case.</li>
+<li>Sample time includes completion of transactions in progress at the stop signal. It excludes warm-up and close/reopen verification.</li>
+<li>Each SQL autocommit transaction changes one row. WAL grouping combines commits internally; SQL transaction batches are not used.</li>
+<li>SSTable and manifest sync remains enabled. The main table skips WAL fsync and does not measure power-loss durability.</li>
+<li>Runs are serial. No profiler, tests, or build run during the primary samples.</li>
+</ul>
+<p>Original data: <code>/tmp/slopdb-select-bench-20261014/database-small</code>. All 145 original SSTable names and sizes, and the fixture metadata, remain unchanged. The benchmark copies and raw records remain under <code>/tmp/slopdb-write-bench-20261016/</code>.</p>
+<p>The rates above use the hash memtable. It is now optional and off by default.
+Add <code>--hash-memtable</code> to repeat these tests. The default skip list supports scans
+without sorting the entire memtable.</p>
+<h2 id="wal-fsync-control">WAL fsync control</h2>
+<p>The 200-writer control reached <strong>158,178 committed updates/s</strong> with WAL fsync enabled. It has one 20-second sample after a 3-second warm-up. Each committed WAL group is synced. It passed close/reopen checks; the test does not simulate a power failure.</p>
+<h2 id="latency-allocation-and-writer-progress">Latency, allocation, and writer progress</h2>
+<p>Mean latency uses one sample per 64 successful transactions per writer. The p99 column gives the largest histogram-bin upper bound across the three intervals. It is not an exact percentile. Peak RSS covers setup, warm-up, timing, close, reopen, and verification. Allocation bytes and GC counts cover timing only.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">Writers</th>
+<th align="right">Mean latency, µs</th>
+<th align="right">p99 upper bound, µs</th>
+<th align="right">Allocated bytes/transaction</th>
+<th align="right">GC cycles</th>
+<th align="right">Peak RSS, GiB</th>
+<th align="right">External retries</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">96</td>
+<td align="right">130</td>
+<td align="right">262</td>
+<td align="right">1,927</td>
+<td align="right">117</td>
+<td align="right">11.73</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="right">200</td>
+<td align="right">213</td>
+<td align="right">524</td>
+<td align="right">1,798</td>
+<td align="right">136</td>
+<td align="right">12.21</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="right">400</td>
+<td align="right">389</td>
+<td align="right">1,049</td>
+<td align="right">1,752</td>
+<td align="right">141</td>
+<td align="right">12.26</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td align="right">600</td>
+<td align="right">574</td>
+<td align="right">4,194</td>
+<td align="right">1,752</td>
+<td align="right">141</td>
+<td align="right">12.49</td>
+<td align="right">0</td>
+</tr>
+</tbody></table>
+</div><p>All configured writers made progress in every interval. Internal lock waits are part of transaction time. Per-writer minimum and maximum counts, flushes, compaction output, and individual samples are in the JSON file.</p>
+<h2 id="changes-that-raised-the-rate">Changes that raised the rate</h2>
+<ol>
+<li>Replace memtable sorted-list insertion with hash chains and an append log. Point writes no longer search the sorted list. Scans sort a stable copy. Frozen tables reuse that sorted copy.</li>
+<li>Allocate memtable nodes and row bytes in Go memory chunks. Reuse the WAL encoding buffer. Remove temporary sorted batch entries from publication.</li>
+<li>Replace the global queue mutex with an ordered atomic queue. Queue nodes remain separate from pooled requests to prevent reuse races. One caller leads each WAL group and transfers leadership before completed callers wake. The 256-transaction and 1 MiB estimated group limits remain.</li>
+<li>Reuse prepared update row maps, input/output buffers, the private execution object, and caller-owned results. Borrow BLOB bytes only during the restricted point-update evaluation; committed storage and transaction writes keep their own copies.</li>
+<li>Use sharded read counters for latest point reads and online index protection.</li>
+<li>Remove the unused duplicate lock ownership map. Exclusive locks use one owner pointer. Resources without lock values avoid a separate bucket allocation. Reuse exclusive lock entries only after the owner journal drops all references.</li>
+<li>Size the hash table for the configured write buffer. Stop point search at the first visible matching version when installation follows sequence order. Out-of-order direct memtable writes use the full search. Equal-sequence scans put the latest insertion first.</li>
+</ol>
+<p>The storage file format is unchanged. Automatic IDs keep their previously configured persistence mode. The cache keeps its heap/mmap options.</p>
+<p>The main tradeoff is scan cost on a changing memtable. A first scan or range estimate must sort a copy of its append log. Point writes get the lower cost; frozen tables cache the sort.</p>
+<h2 id="trials-removed-from-the-final-code">Trials removed from the final code</h2>
+<ul>
+<li>A dedicated queue worker made smaller WAL groups and reduced throughput.</li>
+<li>Shared completion channels and asynchronous notification also reduced throughput.</li>
+<li>Added group collection windows reduced throughput. The final code adds no collection delay.</li>
+<li>Lower Go processor counts did not give a useful rate increase.</li>
+<li>Buffers above 16 MiB reduced throughput in the tested cases. The final matrix uses 8 MiB.</li>
+</ul>
+<p>All pilot and profile runs are excluded from the main table. Their rate summaries are kept in the JSON file.</p>
+<h2 id="verification">Verification</h2>
+<p>Every final case passed after database close/reopen. The verifier reads all one million target rows, checks all 64 payload bytes, and checks that the total value increase equals every committed update, including warm-up. All five final cases together verified 379,452,093 committed updates.</p>
+<p>Full tests passed:</p>
+<pre><code class="language-sh">GOGC=200 GOMAXPROCS=16 go test ./...
+GOGC=200 GOMAXPROCS=16 go test -race ./db ./sql ./storage -count=1
+</code></pre>
+<p>Tests cover concurrent publication, retained snapshots, hash collisions, out-of-order and equal-sequence versions, scans in both directions, owned row/range bytes, 600 queued writers, group byte limits, large atomic batches, producer gaps, WAL failures, generated IDs, lock upgrades, transaction abort policy, and online indexes.</p>
+<h2 id="reproduce">Reproduce</h2>
+<p>Build the current tool, then use a new destination directory:</p>
+<pre><code class="language-sh">GOGC=200 GOMAXPROCS=16 go build -o /tmp/slopdb-write-bench ./cmd/write-bench
+cp --reflink=always -a /tmp/slopdb-select-bench-20261014/database-small \
+  /tmp/slopdb-update-million
+GOGC=200 /tmp/slopdb-write-bench --db /tmp/slopdb-update-million \
+  --workload update-random --hash-memtable --writers 400 --procs 96 --mem-mib 8 \
+  --hot 1000000 --warmup 10 --seconds 30 --samples 3
+</code></pre>
+<p>Use 600 writers for the higher measured rate. Add <code>--durable</code> for WAL fsync. Use a fresh copy for each run; the verifier expects the saved starting values.</p>
+<p><a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/write/2026-10-16/random-update-million-results.json">Raw results, commands, source/binary hashes, and pilot summaries</a>. The code changes are uncommitted.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/benchmarks/write/2026-10-16/random-update-million.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

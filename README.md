@@ -19,8 +19,10 @@ npm run build:docs
 node scripts/build-docs.mjs /path/to/slopdb
 ```
 
-The generator converts the top-level project guides and `TESTING.md` to HTML,
-retains source revision information, and rewrites links between local guides.
+The generator converts project guides, nested benchmark reports, command README
+files, the project overview, and `TESTING.md` to HTML. It retains source revision
+information, rewrites links between local guides, and makes every rendered guide
+available through the documentation navigation.
 Links to source code and benchmark artifacts open the upstream repository.
 The homepage examples and copy are maintained in `index.html`.
 
@@ -34,6 +36,7 @@ or stale entries.
 npm run sync:functions   # Inspect current engine registries without changing its checkout
 npm run build:docs      # Check coverage and render the reference and guides
 npm run check:examples  # Execute standalone examples in isolated temporary databases
+npm run check:docs      # Check local links, anchors, and duplicate IDs
 ```
 
 These scripts accept an alternate source checkout as an argument. Inventory and
@@ -44,6 +47,11 @@ skipped by the standalone example check. The function pages record the exact
 engine revision and source file locations used for the inventory. A source
 checkout may contain unpublished engine commits; file references do not assume
 that those commits are available on GitHub.
+
+Implementation-verified corrections to stale source prose are recorded in
+`content/guide-corrections.json`, with evidence locations. The build applies
+them without modifying the engine checkout and requires review if the source
+paragraph changes. Edit these inputs rather than generated HTML.
 
 `assets/icon.svg` and `assets/logo.svg` are vector adaptations of the supplied
 [slime-database logo reference](https://chatgpt.com/s/m_6add258a37248191a1638421f881c125).

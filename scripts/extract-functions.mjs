@@ -15,14 +15,14 @@ import("testing";"encoding/json";"os";"runtime";"reflect";"strings")
 func TestWebsiteFunctionInventory(t *testing.T) {
  type Entry struct { Name, Family string; Min, Max int; Result string; Volatile, MySQLOnly bool; Source string; Line int }
  out:=[]Entry{}
- for family,registry:=range map[string]map[string]mysqlFunctionSpec{"mysql":mysqlFunctionRegistry,"postgres":postgresFunctionRegistry} {
+ for family,registry:=range map[string]map[string]FunctionSpec{"mysql":mysqlFunctionRegistry,"postgres":postgresFunctionRegistry} {
   for name,spec:=range registry {
    if strings.HasPrefix(name,"__") { continue }
    file,line:="",0
-   if spec.Eval!=nil { pc:=reflect.ValueOf(spec.Eval).Pointer();if f:=runtime.FuncForPC(pc);f!=nil {file,line=f.FileLine(pc)} }
+   handler:=reflect.ValueOf(spec.Eval);if spec.EvalExpr!=nil {handler=reflect.ValueOf(spec.EvalExpr)};if !handler.IsNil() {pc:=handler.Pointer();if f:=runtime.FuncForPC(pc);f!=nil {file,line=f.FileLine(pc)}}
    if n:=strings.LastIndex(file,"/sql/");n>=0 { file=file[n+1:] }
    result:=spec.Return.String();if spec.Metadata!=nil { result="argument-dependent" }
-   out=append(out,Entry{name,family,spec.Min,spec.Max,result,spec.Volatile,spec.MySQLOnly,file,line})
+   out=append(out,Entry{name,family,spec.Min,spec.Max,result,spec.Volatile,spec.Dialects == OnlyMySQL,file,line})
   }
  }
  for name,limits:=range jsonFunctionArity { if !strings.HasPrefix(name,"__") {out=append(out,Entry{Name:name,Family:"json",Min:limits[0],Max:limits[1],Source:"sql/json_functions.go"})} }
@@ -37,6 +37,7 @@ func TestWebsiteFunctionInventory(t *testing.T) {
  }
  out=append(out,Entry{Name:"CONVERT",Family:"mysql",Min:2,Max:2,Source:"sql/mysql_functions.go"})
  out=append(out,Entry{Name:"MATCH",Family:"mysql",Min:1,Max:-1,Source:"sql/mysql_fulltext.go"})
+ out=append(out,Entry{Name:"FULLTEXT_MATCH",Family:"core",Min:2,Max:3,Source:"sql/fulltext_query.go"})
  for _,name:=range strings.Fields("COUNT SUM AVG MIN MAX TOTAL GROUP_CONCAT") {max:=1;if name=="GROUP_CONCAT" {max=2};out=append(out,Entry{Name:name,Family:"aggregate",Min:1,Max:max,Source:"sql/aggregate_execution.go"})}
  for _,name:=range strings.Fields("ROW_NUMBER RANK DENSE_RANK LAG LEAD FIRST_VALUE LAST_VALUE NTH_VALUE") {min,max:=0,0;switch name {case "LAG","LEAD":min,max=1,3;case "FIRST_VALUE","LAST_VALUE":min,max=1,1;case "NTH_VALUE":min,max=2,2};out=append(out,Entry{Name:name,Family:"window",Min:min,Max:max,Source:"sql/window_execution.go"})}
  data,err:=json.Marshal(out);if err!=nil {t.Fatal(err)};if err=os.WriteFile(os.Getenv("SLOPDB_FUNCTION_INVENTORY_OUTPUT"),data,0600);err!=nil {t.Fatal(err)}

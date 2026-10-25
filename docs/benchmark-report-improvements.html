@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Paired SlopDB improvement measurements — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Paired SlopDB improvement measurements — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html" aria-current="page">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / PAIRED SLOPDB IMPROVEMENT MEASUREMENTS</p><h1 id="paired-slopdb-improvement-measurements">Paired SlopDB improvement measurements</h1>
+<p>The twenty-two measured TPC-H queries totaled <strong>60.686 → 39.590 seconds</strong>, a 34.8% reduction (1.53×). The largest improvement was Q5, <strong>29.953 → 6.700 seconds</strong>. Eleven queries were slower in the after run; Q13 and Q20 regressed most. TPC-C throughput was <strong>2,139.5 → 2,125.8 transactions/second</strong> (-0.64%). These single paired runs do not establish a statistically significant TPC-C change.</p>
+<p>These are historical measurements of the <a href="project-improvements.html">integrated improvements</a>, before the later configurable-page-size changes. Both revisions ran serially without concurrent heavy jobs on the same Linux/ARM64 host with four CPUs and Go 1.22.2. OS caches were not reset. These development workloads are not certified TPC scores.</p>
+<h2 id="revisions-and-settings">Revisions and settings</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Workload</th>
+<th>Before revision</th>
+<th>After revision</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TPC-H</td>
+<td><code>50b6a0b1cb0208650853dfb0c839e64ca4eeb4a4</code></td>
+<td><code>91ea37023b6e02cebf45b80ad25ecfb3ce2c2fd5</code></td>
+</tr>
+<tr>
+<td>TPC-C</td>
+<td><code>50b6a0b1cb0208650853dfb0c839e64ca4eeb4a4</code></td>
+<td><code>04a5ad91db6a959e979d32d675c57f7e633a0cd2</code></td>
+</tr>
+</tbody></table>
+</div><p>TPC-H used the same hash-verified DBGEN SF=0.2 inputs: 1,731,999 rows across eight tables, fourteen secondary indexes, ANALYZE and the Q15 view. Each prepared query had one warmup and one measured execution with a 180-second deadline. The reported median is therefore a single sample. Loading, reopening and preparation were outside query timing.</p>
+<p>TPC-C used fresh seeded databases, ten workers for sixty seconds, two warehouses, ten districts per warehouse, one hundred customers per district, one thousand items and seed 42. Both used prepared statements, five maximum retries, a 250 ms lock timeout and a five-second transaction timeout. Loading, preparation, validation and close/reopen were outside throughput timing.</p>
+<p>Both used WAL recording with WAL fsync disabled, 4 KiB SSTable blocks, a 4 MiB memtable, a 128 MiB decoded-block cache and default auto compression. The after implementation also introduced the default 64 MiB soft operator working budget and spill paths; this comparison measures the integrated implementation, not one isolated optimization. The <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/improvements/manifest.json">manifest</a> records complete configurations, hashes and revision provenance.</p>
+<h2 id="all-twenty-two-tpc-h-queries">All twenty-two TPC-H queries</h2>
+<p>Positive elapsed-time changes indicate a slower after sample.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Query</th>
+<th align="right">Before ms</th>
+<th align="right">After ms</th>
+<th align="right">Elapsed change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Q01: Pricing summary</td>
+<td align="right">4,350.394</td>
+<td align="right">5,017.305</td>
+<td align="right">+15.3%</td>
+</tr>
+<tr>
+<td>Q02: Minimum cost supplier</td>
+<td align="right">56.979</td>
+<td align="right">52.279</td>
+<td align="right">-8.2%</td>
+</tr>
+<tr>
+<td>Q03: Shipping priority</td>
+<td align="right">2,182.020</td>
+<td align="right">2,134.963</td>
+<td align="right">-2.2%</td>
+</tr>
+<tr>
+<td>Q04: Order priority</td>
+<td align="right">422.477</td>
+<td align="right">446.507</td>
+<td align="right">+5.7%</td>
+</tr>
+<tr>
+<td>Q05: Local supplier volume</td>
+<td align="right">29,953.137</td>
+<td align="right">6,700.068</td>
+<td align="right">-77.6%</td>
+</tr>
+<tr>
+<td>Q06: Forecasting revenue</td>
+<td align="right">2,023.559</td>
+<td align="right">1,935.971</td>
+<td align="right">-4.3%</td>
+</tr>
+<tr>
+<td>Q07: Volume shipping</td>
+<td align="right">3,174.912</td>
+<td align="right">3,119.242</td>
+<td align="right">-1.8%</td>
+</tr>
+<tr>
+<td>Q08: National market share</td>
+<td align="right">270.948</td>
+<td align="right">210.076</td>
+<td align="right">-22.5%</td>
+</tr>
+<tr>
+<td>Q09: Product type profit</td>
+<td align="right">4,065.259</td>
+<td align="right">5,056.333</td>
+<td align="right">+24.4%</td>
+</tr>
+<tr>
+<td>Q10: Returned item reporting</td>
+<td align="right">622.756</td>
+<td align="right">619.856</td>
+<td align="right">-0.5%</td>
+</tr>
+<tr>
+<td>Q11: Important stock identification</td>
+<td align="right">94.660</td>
+<td align="right">104.765</td>
+<td align="right">+10.7%</td>
+</tr>
+<tr>
+<td>Q12: Shipping modes</td>
+<td align="right">3,134.051</td>
+<td align="right">2,603.392</td>
+<td align="right">-16.9%</td>
+</tr>
+<tr>
+<td>Q13: Customer distribution</td>
+<td align="right">1,622.683</td>
+<td align="right">3,095.858</td>
+<td align="right">+90.8%</td>
+</tr>
+<tr>
+<td>Q14: Promotion effect</td>
+<td align="right">211.001</td>
+<td align="right">226.496</td>
+<td align="right">+7.3%</td>
+</tr>
+<tr>
+<td>Q15: Top supplier</td>
+<td align="right">529.630</td>
+<td align="right">507.252</td>
+<td align="right">-4.2%</td>
+</tr>
+<tr>
+<td>Q16: Parts supplier relationship</td>
+<td align="right">239.544</td>
+<td align="right">262.252</td>
+<td align="right">+9.5%</td>
+</tr>
+<tr>
+<td>Q17: Small quantity order revenue</td>
+<td align="right">52.492</td>
+<td align="right">56.895</td>
+<td align="right">+8.4%</td>
+</tr>
+<tr>
+<td>Q18: Large volume customer</td>
+<td align="right">3,322.164</td>
+<td align="right">2,723.056</td>
+<td align="right">-18.0%</td>
+</tr>
+<tr>
+<td>Q19: Discounted revenue</td>
+<td align="right">118.808</td>
+<td align="right">91.078</td>
+<td align="right">-23.3%</td>
+</tr>
+<tr>
+<td>Q20: Potential part promotion</td>
+<td align="right">205.254</td>
+<td align="right">331.562</td>
+<td align="right">+61.5%</td>
+</tr>
+<tr>
+<td>Q21: Suppliers who kept orders waiting</td>
+<td align="right">3,823.404</td>
+<td align="right">4,073.148</td>
+<td align="right">+6.5%</td>
+</tr>
+<tr>
+<td>Q22: Global sales opportunity</td>
+<td align="right">210.038</td>
+<td align="right">222.043</td>
+<td align="right">+5.7%</td>
+</tr>
+</tbody></table>
+</div><p>Cumulative allocations across measured TPC-H queries fell from 13.97 to 8.42 GiB (39.7%). These are allocation totals, not retained heap or peak memory. Whole-process high-water RSS was 2.80 → 2.54 GiB, including loading and warmups. Q9, Q13 and Q20 increased both elapsed time and allocations; aggregate improvements do not eliminate these regressions.</p>
+<h2 id="tpc-c-and-correctness">TPC-C and correctness</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Measurement</th>
+<th align="right">Before</th>
+<th align="right">After</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Committed transactions</td>
+<td align="right">128,373</td>
+<td align="right">127,548</td>
+</tr>
+<tr>
+<td>Total p95 latency, ms</td>
+<td align="right">15.118</td>
+<td align="right">15.210</td>
+</tr>
+<tr>
+<td>Total p99 latency, ms</td>
+<td align="right">24.368</td>
+<td align="right">24.480</td>
+</tr>
+<tr>
+<td>Expected rollbacks</td>
+<td align="right">559</td>
+<td align="right">557</td>
+</tr>
+<tr>
+<td>Shutdown cancellations</td>
+<td align="right">8</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>Unexpected failures / retries</td>
+<td align="right">0 / 0</td>
+<td align="right">0 / 0</td>
+</tr>
+</tbody></table>
+</div><p>All fifteen TPC-C consistency assertions passed immediately after each run and again after reopening. All twenty-two TPC-H queries completed without errors or timeouts; complete answers matched independently recomputed SQLite results and the archived DuckDB report. SQLite verification timings were separate correctness checks and are not part of this performance comparison.</p>
+<p>The after TPC-C report adds CPU, allocation and storage counters that the baseline runner did not collect. Its resource window includes workload execution plus shutdown drain, excluding loading, preparation, validation and close. Do not infer before/after resource improvements from missing baseline counters.</p>
+<p>Raw reports: <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/improvements/tpch-before.json">TPC-H before</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/improvements/tpch-complete.json">TPC-H after</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/improvements/tpcc-before.json">TPC-C before</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/improvements/tpcc-after.json">TPC-C after</a>, <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/improvements/verification-before.json">answer verification before</a>, and <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/improvements/verification-after.json">answer verification after</a>. Reports preserve full query answers, samples, plans and the original external artifact paths. No unsuccessful intermediate TPC-H attempts are substituted for the complete after run.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/benchmarks/improvements/README.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

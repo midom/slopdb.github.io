@@ -45,25 +45,29 @@
       <div class="section-heading modes-heading"><div><p class="eyebrow">01 / FOUR WAYS TO RUN IT</p><h2 id="connect-title">In your app. On your terms.</h2></div><p>Start with an embedded database.<br>Open a shell, serve SQL, or bring a cluster online.</p></div>
       <div class="deployment-grid">
         <article class="deployment-card" aria-labelledby="embedded-title">
-          <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">{ }</span><span class="mode-label">IN PROCESS</span><h3 id="embedded-title">Embedded</h3><p>Link the Go engine directly into your application. Your process, your database directory.</p></div>
+          <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">{ }</span><span class="mode-label">IN PROCESS</span><h3 id="embedded-title">Embedded</h3><p>Use Go’s database/sql or the native API. Pooled connections share one engine with independent SQL sessions.</p></div>
           <div class="deployment-code"><div class="mode-code-heading"><span>GO · IN THE SLOPDB MODULE</span><button class="copy-button" data-copy="go-code" aria-label="Copy embedded Go example">Copy <span aria-hidden="true">⧉</span></button></div><pre><code id="go-code"><span class="syntax">package</span> main
 
 <span class="syntax">import</span> (
+    <span class="string">"database/sql"</span>
     <span class="string">"log"</span>
-    <span class="string">"slopdb/db"</span>
+    _ <span class="string">"slopdb/driver"</span>
 )
 
 <span class="syntax">func</span> main() {
-    d, err := db.Open(<span class="string">"./ideas"</span>, nil)
+    pool, err := sql.Open(
+        <span class="string">"slopdb"</span>, <span class="string">"./ideas"</span>)
     <span class="syntax">if</span> err != nil { log.Fatal(err) }
-    _, err = d.Exec(<span class="string">"SELECT 1"</span>)
-    closeErr := d.Close()
+    <span class="syntax">var</span> hello int
+    err = pool.QueryRow(
+        <span class="string">"SELECT 1"</span>).Scan(&amp;hello)
+    closeErr := pool.Close()
     <span class="syntax">if</span> err != nil { log.Fatal(err) }
     <span class="syntax">if</span> closeErr != nil {
         log.Fatal(closeErr)
     }
 }</code></pre></div>
-          <div class="deployment-card-footer"><span>No separate server process</span><a href="docs/prepared-statements.html">Go API guide <span aria-hidden="true">↗</span></a></div>
+          <div class="deployment-card-footer"><span>No separate server process</span><div class="mode-guide-links"><a href="docs/driver.html">database/sql <span aria-hidden="true">↗</span></a><a href="docs/prepared-statements.html">Native API <span aria-hidden="true">↗</span></a></div></div>
         </article>
         <article class="deployment-card" aria-labelledby="cli-title">
           <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">&gt;_</span><span class="mode-label">AT THE PROMPT</span><h3 id="cli-title">CLI</h3><p>Explore your data interactively, inspect a schema, or run a SQL file from your terminal.</p></div>
@@ -78,14 +82,10 @@ go build -o slopdb .
           <div class="deployment-card-footer"><span>A directory and a SQL prompt</span><a href="docs/getting-started.html">CLI guide <span aria-hidden="true">↗</span></a></div>
         </article>
         <article class="deployment-card" aria-labelledby="server-title">
-          <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">↔</span><span class="mode-label">OVER THE WIRE</span><h3 id="server-title">Server</h3><p>Connect applications and tools through a MySQL or PostgreSQL protocol listener.</p></div>
-          <div class="deployment-code"><div class="mode-code-heading"><span>CHOOSE A SQL LISTENER</span><button class="copy-button" data-copy="server-code" aria-label="Copy server examples">Copy <span aria-hidden="true">⧉</span></button></div><pre><code id="server-code"><span class="comment"># MySQL protocol</span>
+          <div class="deployment-card-heading"><span class="mode-symbol" aria-hidden="true">↔</span><span class="mode-label">OVER THE WIRE</span><h3 id="server-title">Server</h3><p>Serve MySQL and PostgreSQL clients from one process, with independent session dialects over the same data.</p></div>
+          <div class="deployment-code"><div class="mode-code-heading"><span>MYSQL + POSTGRESQL</span><button class="copy-button" data-copy="server-code" aria-label="Copy server examples">Copy <span aria-hidden="true">⧉</span></button></div><pre><code id="server-code"><span class="comment"># One engine, both SQL listeners</span>
 ./slopdb \
   --mysql-tcp 127.0.0.1:3306 \
-  ./ideas
-
-<span class="comment"># Or PostgreSQL protocol</span>
-./slopdb \
   --postgres-tcp 127.0.0.1:5432 \
   ./ideas</code></pre></div>
           <div class="deployment-card-footer"><span>TCP or Unix sockets · TLS available</span><div class="mode-guide-links"><a href="docs/mysql-server.html">MySQL <span aria-hidden="true">↗</span></a><a href="docs/postgres-server.html">PostgreSQL <span aria-hidden="true">↗</span></a></div></div>
@@ -110,7 +110,7 @@ export SLOPDB_RAFT_TOKEN=\
           <div class="deployment-card-footer"><span>Next: wait for readiness, join n2 + n3</span><a href="docs/replication.html#start-a-cluster">Build a cluster <span aria-hidden="true">↗</span></a></div>
         </article>
       </div>
-      <p class="deployment-note">Examples assume a build from the repository root. Server snippets are alternatives; each database directory has one owning process. See the protocol guides for SQL compatibility and authentication.</p>
+      <p class="deployment-note">Examples assume a build from the repository root. Both SQL listeners share one owning process per database directory. See the protocol guides for SQL compatibility and authentication.</p>
     </section>
     <section class="replication-section" id="replication" aria-labelledby="replication-title">
       <div class="wrap">

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="INSERT performance with 100 rows per transaction — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>INSERT performance with 100 rows per transaction — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html" aria-current="page">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / INSERT PERFORMANCE WITH 100 ROWS PER TRANSACTION</p><h1 id="insert-performance-with-100-rows-per-transaction">INSERT performance with 100 rows per transaction</h1>
+<h2 id="matched-median-transactionss">Matched median transactions/s</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Keys</th>
+<th align="right">Writers</th>
+<th align="right">Before</th>
+<th align="right">Concurrent skip list</th>
+<th align="right">Change</th>
+<th align="right">Current rows/s</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>random</td>
+<td align="right">96</td>
+<td align="right">4,328</td>
+<td align="right">3,433</td>
+<td align="right">-20.7%</td>
+<td align="right">343,312</td>
+</tr>
+<tr>
+<td>random</td>
+<td align="right">200</td>
+<td align="right">4,443</td>
+<td align="right">3,719</td>
+<td align="right">-16.3%</td>
+<td align="right">371,863</td>
+</tr>
+<tr>
+<td>sequential</td>
+<td align="right">96</td>
+<td align="right">4,350</td>
+<td align="right">3,480</td>
+<td align="right">-20.0%</td>
+<td align="right">347,974</td>
+</tr>
+<tr>
+<td>sequential</td>
+<td align="right">200</td>
+<td align="right">4,131</td>
+<td align="right">3,786</td>
+<td align="right">-8.3%</td>
+<td align="right">378,621</td>
+</tr>
+</tbody></table>
+</div><p>The concurrent skip list reduces the median rate in all four 100-row cases. The faster first interval does not carry through later intervals. The one-row gains in the previous report do not apply to these transactions.</p>
+<h2 id="individual-intervals">Individual intervals</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Keys</th>
+<th align="right">Writers</th>
+<th>Build</th>
+<th>Three intervals, transactions/s</th>
+<th align="right">Mean busy cores</th>
+<th align="right">Transactions/group</th>
+<th align="right">Verified rows, including warm-up</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>random</td>
+<td align="right">96</td>
+<td>before</td>
+<td>6,333 / 4,328 / 2,542</td>
+<td align="right">49.97</td>
+<td align="right">15.6</td>
+<td align="right">46,426,300</td>
+</tr>
+<tr>
+<td>random</td>
+<td align="right">96</td>
+<td>after</td>
+<td>7,411 / 3,433 / 2,322</td>
+<td align="right">62.83</td>
+<td align="right">5.8</td>
+<td align="right">49,101,800</td>
+</tr>
+<tr>
+<td>random</td>
+<td align="right">200</td>
+<td>before</td>
+<td>7,295 / 4,443 / 2,478</td>
+<td align="right">61.23</td>
+<td align="right">53.7</td>
+<td align="right">49,843,900</td>
+</tr>
+<tr>
+<td>random</td>
+<td align="right">200</td>
+<td>after</td>
+<td>7,680 / 3,719 / 2,405</td>
+<td align="right">70.26</td>
+<td align="right">34.4</td>
+<td align="right">51,497,300</td>
+</tr>
+<tr>
+<td>sequential</td>
+<td align="right">96</td>
+<td>before</td>
+<td>8,977 / 4,350 / 1,392</td>
+<td align="right">20.73</td>
+<td align="right">22.2</td>
+<td align="right">55,131,700</td>
+</tr>
+<tr>
+<td>sequential</td>
+<td align="right">96</td>
+<td>after</td>
+<td>10,332 / 3,480 / 702</td>
+<td align="right">27.33</td>
+<td align="right">4.9</td>
+<td align="right">56,206,300</td>
+</tr>
+<tr>
+<td>sequential</td>
+<td align="right">200</td>
+<td>before</td>
+<td>9,322 / 4,131 / 720</td>
+<td align="right">21.33</td>
+<td align="right">61.8</td>
+<td align="right">53,448,800</td>
+</tr>
+<tr>
+<td>sequential</td>
+<td align="right">200</td>
+<td>after</td>
+<td>9,924 / 3,786 / 2,558</td>
+<td align="right">31.95</td>
+<td align="right">24.6</td>
+<td align="right">61,927,900</td>
+</tr>
+</tbody></table>
+</div><p>Each case starts empty and grows throughout timing. The builds reach different row counts during the same elapsed time. These comparisons do not establish a steady rate at a fixed database size. The last 200-writer sequential interval is much faster with the new build, although its three-interval median is lower.</p>
+<h2 id="single-writer-controls">Single-writer controls</h2>
+<p>These shorter controls use two 10-second intervals after 3 seconds of warm-up. They are excluded from the primary table.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Keys</th>
+<th align="right">Before transactions/s</th>
+<th align="right">Current transactions/s</th>
+<th align="right">Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>random</td>
+<td align="right">1,184</td>
+<td align="right">1,166</td>
+<td align="right">-1.5%</td>
+</tr>
+<tr>
+<td>sequential</td>
+<td align="right">2,179</td>
+<td align="right">2,108</td>
+<td align="right">-3.3%</td>
+</tr>
+</tbody></table>
+</div><h2 id="interpretation">Interpretation</h2>
+<p>The parallel installer searches from the head for each row. The old group path sorts mutations and reuses predecessors. The new path can lose this batch benefit and adds link CAS operations. The measurements also show more CPU use and smaller publication groups in the new build. These runs do not isolate the cost of each change; there is no CPU profile or separate experiment with predecessor reuse enabled.</p>
+<p>A single writer keeps the sorted batch path. Its short controls show a smaller loss. A useful next experiment is sorted private insertion with predecessor reuse inside each parallel transaction, compared with serial sorted group installation.</p>
+<h2 id="settings-and-verification">Settings and verification</h2>
+<ul>
+<li>Before engine: <code>762221ca4ff25b4ad6d28e7eb942dd0a153f4420</code>; after engine: <code>10412fc</code>. Both binaries use the exact same extended benchmark source. No engine code was changed for these tests.</li>
+<li>Machine: 96 virtual AMD EPYC Genoa CPUs, Go 1.26.7.</li>
+<li>Each SQL INSERT statement contains 100 VALUES tuples. One successful statement is one committed transaction. Each result must report exactly 100 changed rows.</li>
+<li>Row: 8-byte ID, 8-byte value, 64-byte BLOB; 80 logical bytes, 84 encoded bytes.</li>
+<li>Random explicit keys use a deterministic permutation without duplicates. Sequential explicit keys are contiguous within each transaction; transaction ranges interleave writers. SQL automatic ID allocation is not used.</li>
+<li><code>GOMAXPROCS=96</code>, <code>GOGC=200</code>, 20 GiB mmap cache limit, 8 MiB write buffer, eight background compaction jobs, default sorted memtable.</li>
+<li>WAL is disabled entirely. SSTable and manifest sync remains enabled.</li>
+<li>Eight primary cases use three 30-second intervals after 10 seconds of warm-up. All cases run serially without concurrent builds, tests, or profiles.</li>
+<li>Timing includes completion of transactions in progress at the stop signal. Warm-up, close, reopen, and verification are excluded.</li>
+<li>Each writer owns a session and uses a shared prepared statement with private bindings and payloads.</li>
+<li>All 12 cases pass full row and payload checks after close/reopen. Checks include positive IDs, unique row tickets, expected transaction ranges, key mapping, all payload bytes, and exact row totals. Every configured writer makes progress in every interval, with no external lock retries.</li>
+<li>Verified 439,032,800 rows from 4,390,328 committed transactions, including warm-up. Full artifacts and databases remain under <code>/tmp/slopdb-batch100-20261016/</code>. Original fixtures are not used or changed.</li>
+<li>Source and binary hashes match the saved metadata.</li>
+<li>WAL-disabled verification tests a clean close. A crash can lose unflushed changes; crash and power-loss persistence are not tested.</li>
+</ul>
+<h2 id="reproduce">Reproduce</h2>
+<p>These measurements predate the option. The after build used parallel
+installation by default. It is now off by default; add
+<code>--parallel-memtable-writes</code> to reproduce the after mode. Omit it for serial
+installation. Saved commands and hashes describe the original measured builds.</p>
+<pre><code class="language-sh">GOGC=200 GOMAXPROCS=16 go build -o /tmp/slopdb-write-bench ./cmd/write-bench
+GOGC=200 /tmp/slopdb-write-bench --db /tmp/fresh-batch100-random \
+  --workload insert-random --rows-per-tx 100 --writers 200 --procs 96 \
+  --parallel-memtable-writes --no-wal --mem-mib 8 --warmup 10 --seconds 30 --samples 3
+</code></pre>
+<p>Use <code>--workload insert-sequential</code> for sequential explicit keys. Use a new database for each case. The tool now supports <code>--rows-per-tx</code>, sequential INSERT, rows/s, and full multirow verification. Engine code remains unchanged.</p>
+<p><a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/write/2026-10-16/batch100-inserts-results.json">Raw results, commands, source and binary hashes, and runner scripts</a>.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/benchmarks/write/2026-10-16/batch100-inserts.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

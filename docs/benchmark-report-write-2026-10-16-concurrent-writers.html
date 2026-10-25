@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Concurrent writes: 96 and 200 writers — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Concurrent writes: 96 and 200 writers — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html" aria-current="page">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / CONCURRENT WRITES: 96 AND 200 WRITERS</p><h1 id="concurrent-writes-96-and-200-writers">Concurrent writes: 96 and 200 writers</h1>
+<h2 id="main-results">Main results</h2>
+<p>See <a href="benchmark-report-write-2026-10-16-random-update-million.html">the later random UPDATE results</a> for the one-million-transactions/s goal.</p>
+<p>Each transaction commits one row change. Rows have 80 logical bytes. WAL is enabled; WAL fsync is disabled in this table. Values are medians of three consecutive 30-second samples after a 10-second warm-up. All samples use the same growing database for that case.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th align="right">96 writers, transactions/s</th>
+<th align="right">200 writers, transactions/s</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>INSERT, random keys</td>
+<td align="right">239,271</td>
+<td align="right">270,261</td>
+</tr>
+<tr>
+<td>INSERT, persistent automatic IDs</td>
+<td align="right">29,695</td>
+<td align="right">21,534</td>
+</tr>
+<tr>
+<td>INSERT, restart-reuse automatic IDs</td>
+<td align="right">330,265</td>
+<td align="right">344,354</td>
+</tr>
+<tr>
+<td>UPDATE, random IDs</td>
+<td align="right">329,629</td>
+<td align="right">405,660</td>
+</tr>
+<tr>
+<td>UPDATE, sequential IDs</td>
+<td align="right">368,340</td>
+<td align="right">439,884</td>
+</tr>
+</tbody></table>
+</div><p>Random inserts slow as the database grows. At 96 writers, the three samples are 251,232, 239,271, 215,472 transactions/s. At 200 writers, they are 297,355, 270,261, 200,883. The random insert CPU use rises while throughput falls. Flushes and compaction are included in timing. These runs do not establish a long-term steady write rate.</p>
+<p>The restart-reuse ID samples also fall in the last interval: 334,223 / 330,265 / 285,783 at 96 writers, and 344,354 / 344,648 / 265,288 at 200 writers. The medians must be read with this decline in mind.</p>
+<h2 id="settings-and-data">Settings and data</h2>
+<ul>
+<li>Machine: 96 virtual AMD EPYC Genoa CPUs; Go 1.26.7. All 96 CPUs are available to the process.</li>
+<li><code>GOMAXPROCS=96</code>, <code>GOGC=200</code>. GOGC was never set above 200.</li>
+<li>20 GiB maximum mmap block cache, 4 MiB write buffer, eight background compaction jobs.</li>
+<li>The cache size is a limit. The test does not fill all 20 GiB before timing.</li>
+<li>Row: 8-byte integer ID, 8-byte integer value, 64-byte BLOB; 80 logical bytes, 84 bytes in the SQL row encoding. This excludes storage keys and WAL metadata.</li>
+<li>One session per writer; one shared prepared statement. No SQL transaction batches. WAL groups can contain several independent transactions.</li>
+<li>INSERT uses a new database for each case. Random keys use a deterministic permutation with no duplicate keys. Automatic inserts use a real <code>INTEGER PRIMARY KEY AUTOINCREMENT</code> column and omit the ID.</li>
+<li>UPDATE uses a Btrfs copy of the saved 10 GB small-row database: 138,864,149 rows. Each case updates IDs 1 through 1,000,000. That range is read into the cache before timing. Thus the update result measures a resident subset of the 10 GB database.</li>
+<li>Random updates choose existing IDs. Sequential updates visit existing IDs in insertion order. They use <code>UPDATE bench SET v=v+1 WHERE id=?</code>.</li>
+<li>Each case runs alone. Primary samples have no profiler or concurrent build/test process.</li>
+<li>Time includes completion of transactions in progress at the stop signal. Warm-up and verification are excluded.</li>
+<li>WAL fsync is disabled for the main table. SSTable and manifest sync remains enabled. The main results do not give a power-loss durability rate.</li>
+</ul>
+<p>Original data: <code>/tmp/slopdb-select-bench-20261014/database-small</code>. Its 145 SSTable names and sizes, and its fixture metadata, are unchanged. INSERT databases and UPDATE copies remain under <code>/tmp/slopdb-write-bench-20261016/</code>.</p>
+<h2 id="reference-build">Reference build</h2>
+<p>Reference: commit <code>a0769eaa8c6b263f6db482e31f9db74b895d84fb</code>. Both binaries use the same final benchmark code and padded worker counters. The reference build only omits the new option assignment. Each reference case has two 12-second samples after a 3-second warm-up. The new build has longer runs and larger final databases. These values show observed rates at different durations; they are not matched long-term speed ratios.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th align="right">Reference, 96 writers</th>
+<th align="right">New, 96 writers</th>
+<th align="right">Reference, 200 writers</th>
+<th align="right">New, 200 writers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>INSERT, random keys</td>
+<td align="right">160,441</td>
+<td align="right">239,271</td>
+<td align="right">163,715</td>
+<td align="right">270,261</td>
+</tr>
+<tr>
+<td>INSERT, persistent automatic IDs</td>
+<td align="right">8,395</td>
+<td align="right">29,695</td>
+<td align="right">4,120</td>
+<td align="right">21,534</td>
+</tr>
+<tr>
+<td>UPDATE, random IDs</td>
+<td align="right">193,311</td>
+<td align="right">329,629</td>
+<td align="right">197,123</td>
+<td align="right">405,660</td>
+</tr>
+<tr>
+<td>UPDATE, sequential IDs</td>
+<td align="right">197,775</td>
+<td align="right">368,340</td>
+<td align="right">195,078</td>
+<td align="right">439,884</td>
+</tr>
+</tbody></table>
+</div><h2 id="wal-fsync-enabled-200-writers">WAL fsync enabled: 200 writers</h2>
+<p>Each case has one 20-second sample after a 3-second warm-up. These shorter controls use WAL fsync on every committed group. Close/reopen checks passed; the test does not simulate a power failure.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th align="right">Reference transactions/s</th>
+<th align="right">New transactions/s</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>INSERT, random keys</td>
+<td align="right">92,506</td>
+<td align="right">123,818</td>
+</tr>
+<tr>
+<td>INSERT, persistent automatic IDs</td>
+<td align="right">1,752</td>
+<td align="right">19,327</td>
+</tr>
+<tr>
+<td>INSERT, restart-reuse automatic IDs</td>
+<td align="right">—</td>
+<td align="right">153,162</td>
+</tr>
+<tr>
+<td>UPDATE, random IDs</td>
+<td align="right">91,788</td>
+<td align="right">133,093</td>
+</tr>
+<tr>
+<td>UPDATE, sequential IDs</td>
+<td align="right">106,221</td>
+<td align="right">155,425</td>
+</tr>
+</tbody></table>
+</div><p>Persistent automatic IDs improve from 1,752 to 19,327 transactions/s in this matched durable control. Counter snapshots enter the WAL queue in order. The catalog publication mutex is released after queue insertion, so other transactions can share the fsync. With fsync disabled, the shorter commit path is faster and remains in use.</p>
+<h2 id="cpu-latency-and-groups">CPU, latency, and groups</h2>
+<p>CPU is the mean number of busy cores during timing. Mean latency uses one sample per 64 successful transactions per writer. The p99 column is the largest histogram-bin upper bound across the three samples; it is not an exact p99. Groups are total timed transactions divided by total timed WAL groups.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th align="right">Writers</th>
+<th align="right">Busy cores</th>
+<th align="right">Mean latency, µs</th>
+<th align="right">p99 upper bound, µs</th>
+<th align="right">Transactions/group</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>INSERT, random keys</td>
+<td align="right">96</td>
+<td align="right">21.57</td>
+<td align="right">407</td>
+<td align="right">2,097</td>
+<td align="right">40.7</td>
+</tr>
+<tr>
+<td>INSERT, random keys</td>
+<td align="right">200</td>
+<td align="right">28.99</td>
+<td align="right">801</td>
+<td align="right">16,777</td>
+<td align="right">88.2</td>
+</tr>
+<tr>
+<td>INSERT, persistent automatic IDs</td>
+<td align="right">96</td>
+<td align="right">5.13</td>
+<td align="right">3,237</td>
+<td align="right">33,554</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td>INSERT, persistent automatic IDs</td>
+<td align="right">200</td>
+<td align="right">5.68</td>
+<td align="right">9,229</td>
+<td align="right">67,109</td>
+<td align="right">1.0</td>
+</tr>
+<tr>
+<td>INSERT, restart-reuse automatic IDs</td>
+<td align="right">96</td>
+<td align="right">13.66</td>
+<td align="right">302</td>
+<td align="right">2,097</td>
+<td align="right">39.9</td>
+</tr>
+<tr>
+<td>INSERT, restart-reuse automatic IDs</td>
+<td align="right">200</td>
+<td align="right">14.05</td>
+<td align="right">626</td>
+<td align="right">8,389</td>
+<td align="right">56.9</td>
+</tr>
+<tr>
+<td>UPDATE, random IDs</td>
+<td align="right">96</td>
+<td align="right">10.31</td>
+<td align="right">293</td>
+<td align="right">1,049</td>
+<td align="right">46.7</td>
+</tr>
+<tr>
+<td>UPDATE, random IDs</td>
+<td align="right">200</td>
+<td align="right">12.60</td>
+<td align="right">496</td>
+<td align="right">2,097</td>
+<td align="right">98.2</td>
+</tr>
+<tr>
+<td>UPDATE, sequential IDs</td>
+<td align="right">96</td>
+<td align="right">10.47</td>
+<td align="right">259</td>
+<td align="right">524</td>
+<td align="right">46.4</td>
+</tr>
+<tr>
+<td>UPDATE, sequential IDs</td>
+<td align="right">200</td>
+<td align="right">12.38</td>
+<td align="right">444</td>
+<td align="right">1,049</td>
+<td align="right">98.1</td>
+</tr>
+</tbody></table>
+</div><p>All configured writers made progress in every sample. There were no external lock-timeout or conflict retries. Internal lock waits are included in transaction time. Exact per-writer minimum and maximum counts are in the JSON file.</p>
+<h2 id="flushes-compaction-and-memory">Flushes, compaction, and memory</h2>
+<p>Flush and compaction counts cover the three timed samples. Compaction output is cumulative output, not live database size. Peak RSS covers the entire process, including setup, warm-up, close, reopen, and verification. Go allocation bytes count all allocations during timing, not retained heap bytes.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Operation</th>
+<th align="right">Writers</th>
+<th align="right">Flushes</th>
+<th align="right">Compactions</th>
+<th align="right">Compaction output, GiB</th>
+<th align="right">Peak RSS, GiB</th>
+<th align="right">Allocated bytes/transaction</th>
+<th align="right">GC cycles</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>INSERT, random keys</td>
+<td align="right">96</td>
+<td align="right">687</td>
+<td align="right">5</td>
+<td align="right">3.18</td>
+<td align="right">3.92</td>
+<td align="right">7,194</td>
+<td align="right">733</td>
+</tr>
+<tr>
+<td>INSERT, random keys</td>
+<td align="right">200</td>
+<td align="right">747</td>
+<td align="right">4</td>
+<td align="right">1.90</td>
+<td align="right">4.36</td>
+<td align="right">7,555</td>
+<td align="right">734</td>
+</tr>
+<tr>
+<td>INSERT, persistent automatic IDs</td>
+<td align="right">96</td>
+<td align="right">106</td>
+<td align="right">94</td>
+<td align="right">1.44</td>
+<td align="right">0.37</td>
+<td align="right">16,497</td>
+<td align="right">945</td>
+</tr>
+<tr>
+<td>INSERT, persistent automatic IDs</td>
+<td align="right">200</td>
+<td align="right">74</td>
+<td align="right">71</td>
+<td align="right">0.83</td>
+<td align="right">0.41</td>
+<td align="right">15,662</td>
+<td align="right">729</td>
+</tr>
+<tr>
+<td>INSERT, restart-reuse automatic IDs</td>
+<td align="right">96</td>
+<td align="right">924</td>
+<td align="right">1456</td>
+<td align="right">7.56</td>
+<td align="right">3.48</td>
+<td align="right">9,848</td>
+<td align="right">1388</td>
+</tr>
+<tr>
+<td>INSERT, restart-reuse automatic IDs</td>
+<td align="right">200</td>
+<td align="right">928</td>
+<td align="right">1429</td>
+<td align="right">7.66</td>
+<td align="right">3.53</td>
+<td align="right">9,664</td>
+<td align="right">1320</td>
+</tr>
+<tr>
+<td>UPDATE, random IDs</td>
+<td align="right">96</td>
+<td align="right">957</td>
+<td align="right">39</td>
+<td align="right">2.69</td>
+<td align="right">8.69</td>
+<td align="right">4,831</td>
+<td align="right">145</td>
+</tr>
+<tr>
+<td>UPDATE, random IDs</td>
+<td align="right">200</td>
+<td align="right">1174</td>
+<td align="right">36</td>
+<td align="right">2.49</td>
+<td align="right">9.29</td>
+<td align="right">4,584</td>
+<td align="right">167</td>
+</tr>
+<tr>
+<td>UPDATE, sequential IDs</td>
+<td align="right">96</td>
+<td align="right">1083</td>
+<td align="right">39</td>
+<td align="right">2.68</td>
+<td align="right">6.22</td>
+<td align="right">4,730</td>
+<td align="right">168</td>
+</tr>
+<tr>
+<td>UPDATE, sequential IDs</td>
+<td align="right">200</td>
+<td align="right">1312</td>
+<td align="right">38</td>
+<td align="right">2.60</td>
+<td align="right">5.97</td>
+<td align="right">4,541</td>
+<td align="right">194</td>
+</tr>
+</tbody></table>
+</div><h2 id="changes">Changes</h2>
+<ul>
+<li>Add <code>storage.Options.DisableAutoIncrementPersistence</code>. Default: false. The CLI flag is <code>--no-autoincrement-persistence</code>; the benchmark flag is <code>--volatile-ids</code>.</li>
+<li>In this mode, automatic-ID reservations stay in memory. After a restart, allocation starts above the highest surviving row ID. Deleted high IDs can be used again. IDs are not reused during the same open instance. Previously stored counters are ignored while the option is enabled. Row WAL and fsync settings still apply.</li>
+<li>Protect runtime ID reservations with a separate mutex. Automatic allocation no longer takes the exclusive catalog publication lock. Remove repeated reservation scans and locks for IDs already reserved by the allocator.</li>
+<li>Use sharded shared catalog counters for autocommit inserts and point updates. Row and predicate locks remain in the normal lock manager. Queued DDL stops new shared grants and appears in lock diagnostics. Explicit transactions keep the normal catalog lock path.</li>
+<li>Use separate reader and writer wait conditions for catalog publication. Wake one writer at a time; wake readers when queued writers finish.</li>
+<li>Raise the WAL group limit from 64 to 256 transactions, with a 1 MiB estimated byte limit. A large caller batch stays atomic and runs alone. There is no added wait to collect a group.</li>
+<li>Allow durable automatic-ID counter commits to join the ordered WAL queue before they release the catalog publication mutex. Merge complete counter snapshots in queue order and publish counters only after success.</li>
+<li>Check signed ID exhaustion. Concurrent allocation after deleted high IDs must start above the persistent floor.</li>
+<li>Add <code>cmd/write-bench</code> with row, payload, value-total, and reopen checks.</li>
+</ul>
+<h2 id="remaining-limits">Remaining limits</h2>
+<p>The engine still has one ordered WAL and memtable publication path. Extra writers can join larger groups, but they cannot publish several groups in parallel. At 200 writers, random updates average 98 transactions/group and use about 12.6 cores. Automatic inserts also use a shared ID allocator. Persistent automatic inserts without fsync still serialize counter metadata publication and average one transaction/group.</p>
+<p>Earlier, separate profile runs found catalog wait and wake costs in automatic inserts, and catalog lock-manager contention in updates. After the shared catalog path changed, an intermediate 200-writer update profile showed memtable search, Bloom checks, insertion, and scheduler work among the main costs. The old 64-transaction group limit was full. These profiles guided the changes; they are not profiles of the final build and are excluded from the result tables.</p>
+<p>Further gains need less work in the serial publication path, fewer SQL row allocations and copies, and less compaction work for growing random-key databases. Parallel publication would need a design that preserves WAL order, transaction atomicity, and reader visibility. Increasing writers alone will not use all 96 cores.</p>
+<h2 id="verification-and-reproduction">Verification and reproduction</h2>
+<p>All 27 cases passed verification after close/reopen. INSERT checks every row, all 64 payload bytes, missing or duplicate tickets, and random-key mapping. UPDATE checks all one million target rows, all payload bytes, and that the sum of value changes equals all committed transactions, including warm-up.</p>
+<p>The full Go test suite passed. The race test selection passed for catalog publication, generated IDs, WAL queue ordering, lock waits, shutdown, online indexes, and prepared execution. New tests cover 200 concurrent ID writers, default persistent deleted IDs, restart reuse, ID exhaustion, table drop/recreate, inactive table counters, DDL exclusion, and WAL failures.</p>
+<pre><code class="language-sh">GOGC=200 GOMAXPROCS=16 go test ./...
+GOGC=200 GOMAXPROCS=16 go test -race ./db ./sql ./storage \
+  -run &#39;TestPointCatalog|TestCatalog|Test.*GeneratedIDs|TestAutoIncrement|TestQueued|TestLockWaits|TestConcurrentShutdown|TestOnline|TestPrepared&#39; -count=1
+</code></pre>
+<p>See <a href="benchmark-tool-write-bench.html">the benchmark tool</a> for build and single-case commands. Exact final commands, samples, source and binary SHA256 values, and verification results are in <a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/write/2026-10-16/write-results.json">write-results.json</a>. The serial matrix runner and raw process records remain under <code>/tmp/slopdb-write-bench-20261016/</code>. Pilot and profile runs are excluded from this JSON and all result tables. SQLite is excluded from this benchmark.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/benchmarks/write/2026-10-16/concurrent-writers.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

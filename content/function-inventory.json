@@ -1,5 +1,5 @@
 {
-  "revision": "005198521c76b1b5a3627ba410264e6f25cac204",
+  "revision": "49150cf075c2586a4ee048eb283d3bd3f9c72d5a",
   "functions": [
     {
       "name": "AVG",
@@ -142,6 +142,17 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/executor.go",
+      "line": 0
+    },
+    {
+      "name": "FULLTEXT_MATCH",
+      "family": "core",
+      "min": 2,
+      "max": 3,
+      "result": "",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/fulltext_query.go",
       "line": 0
     },
     {
@@ -758,7 +769,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 76
+      "line": 62
     },
     {
       "name": "AES_ENCRYPT",
@@ -769,7 +780,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 76
+      "line": 62
     },
     {
       "name": "ASCII",
@@ -846,7 +857,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 176
+      "line": 162
     },
     {
       "name": "BIT_COUNT",
@@ -934,7 +945,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 327
+      "line": 313
     },
     {
       "name": "COLLATION",
@@ -945,7 +956,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 327
+      "line": 313
     },
     {
       "name": "COMPRESS",
@@ -956,7 +967,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 448
+      "line": 431
     },
     {
       "name": "CONCAT",
@@ -1012,6 +1023,17 @@
       "mySQLOnly": false,
       "source": "sql/mysql_functions.go",
       "line": 0
+    },
+    {
+      "name": "CONVERT_TZ",
+      "family": "mysql",
+      "min": 3,
+      "max": 3,
+      "result": "TEXT",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/mysql_function_extra.go",
+      "line": 42
     },
     {
       "name": "COS",
@@ -1330,7 +1352,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_session.go",
-      "line": 59
+      "line": 70
     },
     {
       "name": "FROM_BASE64",
@@ -1364,6 +1386,17 @@
       "mySQLOnly": false,
       "source": "sql/mysql_function_temporal.go",
       "line": 264
+    },
+    {
+      "name": "GET_FORMAT",
+      "family": "mysql",
+      "min": 2,
+      "max": 2,
+      "result": "TEXT",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/mysql_function_extra.go",
+      "line": 15
     },
     {
       "name": "GET_LOCK",
@@ -1418,7 +1451,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 189
+      "line": 175
     },
     {
       "name": "INET_NTOA",
@@ -1429,7 +1462,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 223
+      "line": 209
     },
     {
       "name": "INET6_ATON",
@@ -1440,7 +1473,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 240
+      "line": 226
     },
     {
       "name": "INET6_NTOA",
@@ -1451,7 +1484,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 250
+      "line": 236
     },
     {
       "name": "INSERT",
@@ -1484,7 +1517,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 270
+      "line": 256
     },
     {
       "name": "IS_IPV4_COMPAT",
@@ -1495,7 +1528,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 286
+      "line": 272
     },
     {
       "name": "IS_IPV4_MAPPED",
@@ -1506,7 +1539,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 286
+      "line": 272
     },
     {
       "name": "IS_IPV6",
@@ -1517,7 +1550,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 270
+      "line": 256
     },
     {
       "name": "IS_USED_LOCK",
@@ -1528,7 +1561,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_session.go",
-      "line": 68
+      "line": 79
     },
     {
       "name": "IS_UUID",
@@ -1539,7 +1572,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 153
+      "line": 139
     },
     {
       "name": "ISNULL",
@@ -1550,7 +1583,18 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 317
+      "line": 303
+    },
+    {
+      "name": "JSON_SEARCH",
+      "family": "mysql",
+      "min": 3,
+      "max": -1,
+      "result": "JSON",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/mysql_function_extra.go",
+      "line": 150
     },
     {
       "name": "LAST_DAY",
@@ -1572,7 +1616,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_session.go",
-      "line": 49
+      "line": 60
     },
     {
       "name": "LCASE",
@@ -1748,7 +1792,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 37
+      "line": 33
     },
     {
       "name": "MICROSECOND",
@@ -1815,6 +1859,17 @@
       "mySQLOnly": false,
       "source": "sql/mysql_function_temporal.go",
       "line": 38
+    },
+    {
+      "name": "NAME_CONST",
+      "family": "mysql",
+      "min": 2,
+      "max": 2,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": true,
+      "source": "sql/mysql_function_extra.go",
+      "line": 76
     },
     {
       "name": "NOW",
@@ -1968,7 +2023,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 127
+      "line": 113
     },
     {
       "name": "REGEXP_INSTR",
@@ -2023,7 +2078,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_session.go",
-      "line": 68
+      "line": 79
     },
     {
       "name": "RELEASE_LOCK",
@@ -2089,7 +2144,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_session.go",
-      "line": 58
+      "line": 69
     },
     {
       "name": "RPAD",
@@ -2111,7 +2166,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 349
+      "line": 335
     },
     {
       "name": "SEC_TO_TIME",
@@ -2144,7 +2199,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 349
+      "line": 335
     },
     {
       "name": "SHA",
@@ -2155,7 +2210,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 37
+      "line": 33
     },
     {
       "name": "SHA1",
@@ -2166,7 +2221,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 37
+      "line": 33
     },
     {
       "name": "SHA2",
@@ -2177,7 +2232,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 37
+      "line": 33
     },
     {
       "name": "SIGN",
@@ -2210,7 +2265,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 360
+      "line": 346
     },
     {
       "name": "SOUNDEX",
@@ -2331,7 +2386,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 349
+      "line": 335
     },
     {
       "name": "TAN",
@@ -2463,7 +2518,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 473
+      "line": 456
     },
     {
       "name": "UNCOMPRESSED_LENGTH",
@@ -2474,7 +2529,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 307
+      "line": 293
     },
     {
       "name": "UNHEX",
@@ -2507,7 +2562,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 349
+      "line": 335
     },
     {
       "name": "UTC_DATE",
@@ -2551,7 +2606,7 @@
       "volatile": true,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 139
+      "line": 125
     },
     {
       "name": "UUID_TO_BIN",
@@ -2562,7 +2617,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/mysql_function_utility.go",
-      "line": 163
+      "line": 149
     },
     {
       "name": "VERSION",
@@ -2774,6 +2829,17 @@
       "line": 19
     },
     {
+      "name": "BIT_COUNT",
+      "family": "postgres",
+      "min": 1,
+      "max": 1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 40
+    },
+    {
       "name": "BIT_LENGTH",
       "family": "postgres",
       "min": 1,
@@ -2793,7 +2859,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 134
+      "line": 137
     },
     {
       "name": "CBRT",
@@ -2903,7 +2969,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 321
+      "line": 343
     },
     {
       "name": "CONVERT_TO",
@@ -2914,7 +2980,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 337
+      "line": 359
     },
     {
       "name": "COS",
@@ -3079,7 +3145,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 225
+      "line": 228
     },
     {
       "name": "DEGREES",
@@ -3112,7 +3178,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 175
+      "line": 178
     },
     {
       "name": "EXP",
@@ -3156,7 +3222,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 513
+      "line": 547
     },
     {
       "name": "FORMAT_TYPE",
@@ -3181,6 +3247,17 @@
       "line": 162
     },
     {
+      "name": "GEN_RANDOM_UUID",
+      "family": "postgres",
+      "min": 0,
+      "max": 0,
+      "result": "argument-dependent",
+      "volatile": true,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 122
+    },
+    {
       "name": "GET_BIT",
       "family": "postgres",
       "min": 2,
@@ -3189,7 +3266,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 299
+      "line": 311
     },
     {
       "name": "GET_BYTE",
@@ -3200,7 +3277,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 276
+      "line": 279
     },
     {
       "name": "INITCAP",
@@ -3211,7 +3288,18 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
+    },
+    {
+      "name": "IS_NORMALIZED",
+      "family": "postgres",
+      "min": 1,
+      "max": 2,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 69
     },
     {
       "name": "ISFINITE",
@@ -3278,6 +3366,17 @@
       "mySQLOnly": false,
       "source": "sql/postgres_function_json.go",
       "line": 120
+    },
+    {
+      "name": "JSON_STRIP_NULLS",
+      "family": "postgres",
+      "min": 1,
+      "max": 1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_json.go",
+      "line": 235
     },
     {
       "name": "JSON_TYPEOF",
@@ -3379,6 +3478,17 @@
       "line": 167
     },
     {
+      "name": "JSONB_SET_LAX",
+      "family": "postgres",
+      "min": 3,
+      "max": 5,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_json.go",
+      "line": 246
+    },
+    {
       "name": "JSONB_STRIP_NULLS",
       "family": "postgres",
       "min": 1,
@@ -3420,7 +3530,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
     },
     {
       "name": "LENGTH",
@@ -3497,7 +3607,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
     },
     {
       "name": "LTRIM",
@@ -3508,7 +3618,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 134
+      "line": 137
     },
     {
       "name": "MAKE_DATE",
@@ -3566,6 +3676,17 @@
       "line": 162
     },
     {
+      "name": "NORMALIZE",
+      "family": "postgres",
+      "min": 1,
+      "max": 2,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 69
+    },
+    {
       "name": "NOW",
       "family": "postgres",
       "min": 0,
@@ -3575,6 +3696,28 @@
       "mySQLOnly": false,
       "source": "sql/postgres_function_clock.go",
       "line": 13
+    },
+    {
+      "name": "NUM_NONNULLS",
+      "family": "postgres",
+      "min": 1,
+      "max": -1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 112
+    },
+    {
+      "name": "NUM_NULLS",
+      "family": "postgres",
+      "min": 1,
+      "max": -1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 112
     },
     {
       "name": "OCTET_LENGTH",
@@ -3772,7 +3915,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 159
+      "line": 162
     },
     {
       "name": "QUOTE_LITERAL",
@@ -3783,7 +3926,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 159
+      "line": 162
     },
     {
       "name": "QUOTE_NULLABLE",
@@ -3794,7 +3937,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 159
+      "line": 162
     },
     {
       "name": "RADIANS",
@@ -3871,7 +4014,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
     },
     {
       "name": "REVERSE",
@@ -3882,7 +4025,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
     },
     {
       "name": "RIGHT",
@@ -3893,7 +4036,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
     },
     {
       "name": "ROUND",
@@ -3915,7 +4058,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
     },
     {
       "name": "RTRIM",
@@ -3926,7 +4069,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 134
+      "line": 137
     },
     {
       "name": "SCALE",
@@ -3959,7 +4102,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 309
+      "line": 324
     },
     {
       "name": "SET_BYTE",
@@ -3970,7 +4113,51 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 286
+      "line": 292
+    },
+    {
+      "name": "SHA224",
+      "family": "postgres",
+      "min": 1,
+      "max": 1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 52
+    },
+    {
+      "name": "SHA256",
+      "family": "postgres",
+      "min": 1,
+      "max": 1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 52
+    },
+    {
+      "name": "SHA384",
+      "family": "postgres",
+      "min": 1,
+      "max": 1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 52
+    },
+    {
+      "name": "SHA512",
+      "family": "postgres",
+      "min": 1,
+      "max": 1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 52
     },
     {
       "name": "SIGN",
@@ -4025,7 +4212,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
     },
     {
       "name": "SQRT",
@@ -4037,6 +4224,17 @@
       "mySQLOnly": false,
       "source": "sql/postgres_function_math.go",
       "line": 19
+    },
+    {
+      "name": "STARTS_WITH",
+      "family": "postgres",
+      "min": 2,
+      "max": 2,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 21
     },
     {
       "name": "STATEMENT_TIMESTAMP",
@@ -4058,7 +4256,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 104
+      "line": 107
     },
     {
       "name": "SUBSTR",
@@ -4149,6 +4347,17 @@
       "line": 13
     },
     {
+      "name": "TO_HEX",
+      "family": "postgres",
+      "min": 1,
+      "max": 1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 27
+    },
+    {
       "name": "TO_JSON",
       "family": "postgres",
       "min": 1,
@@ -4223,7 +4432,7 @@
       "volatile": false,
       "mySQLOnly": false,
       "source": "sql/postgres_function_strings.go",
-      "line": 127
+      "line": 130
     },
     {
       "name": "TRIM_SCALE",
@@ -4246,6 +4455,17 @@
       "mySQLOnly": false,
       "source": "sql/postgres_function_math.go",
       "line": 114
+    },
+    {
+      "name": "UNISTR",
+      "family": "postgres",
+      "min": 1,
+      "max": 1,
+      "result": "argument-dependent",
+      "volatile": false,
+      "mySQLOnly": false,
+      "source": "sql/postgres_function_extra.go",
+      "line": 104
     },
     {
       "name": "USER",

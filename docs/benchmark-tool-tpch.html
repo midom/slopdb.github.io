@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="TPC-H query benchmark — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>TPC-H query benchmark — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html" aria-current="page">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / TPC-H QUERY BENCHMARK</p><h1 id="tpc-h-query-benchmark">TPC-H query benchmark</h1>
+<p>This runner executes all 22 TPC-H query shapes on genuine DBGEN data. It uses
+fixed qualification parameters, one query stream, prepared statements, and
+per-query deadlines. It records failures and timeouts and continues through the
+query set. There are no refresh streams or certified QphH scores.</p>
+<h2 id="generate-data-and-run-slopdb">Generate data and run SlopDB</h2>
+<p>The Go runner accepts all eight standard <code>*.tbl</code> files from DBGEN, with or
+without the trailing <code>|</code>. The optional Python generator uses DuckDB&#39;s DBGEN
+implementation and saves row counts, input SHA-256 hashes, native queries, and
+native reference answers. Python DuckDB is a development dependency only.</p>
+<pre><code class="language-sh">python3 -m venv /tmp/tpch-env
+/tmp/tpch-env/bin/pip install duckdb==1.5.6
+/tmp/tpch-env/bin/python cmd/tpch/generate.py --sf 0.001 --out /tmp/tpch-sf001
+
+go build -o /tmp/slopdb-tpch ./cmd/tpch
+/tmp/slopdb-tpch -data /tmp/tpch-sf001 -timeout 5s -json /tmp/tpch-slopdb.json
+</code></pre>
+<p>The generator supports <code>--extension /path/to/tpch.duckdb_extension</code> for an
+already downloaded extension. DuckDB and the extension must have matching
+versions. Generation is deterministic. Existing output and database directories
+are never removed or reused.</p>
+<p>Default SlopDB flags:</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-data</code></td>
+<td>required</td>
+<td>Directory containing eight DBGEN tables</td>
+</tr>
+<tr>
+<td><code>-dir</code></td>
+<td>fresh <code>/tmp</code> directory</td>
+<td>SlopDB database directory</td>
+</tr>
+<tr>
+<td><code>-queries</code></td>
+<td><code>all</code></td>
+<td>Query numbers, e.g. <code>1,6,13</code></td>
+</tr>
+<tr>
+<td><code>-runs</code></td>
+<td><code>1</code></td>
+<td>Measured executions per query</td>
+</tr>
+<tr>
+<td><code>-warmups</code></td>
+<td><code>0</code></td>
+<td>Unmeasured executions before each query</td>
+</tr>
+<tr>
+<td><code>-timeout</code></td>
+<td><code>10s</code></td>
+<td>Deadline per execution</td>
+</tr>
+<tr>
+<td><code>-prepared</code></td>
+<td><code>true</code></td>
+<td>Parse each query once before measuring</td>
+</tr>
+<tr>
+<td><code>-indexes</code></td>
+<td><code>true</code></td>
+<td>Create indexes from <code>indexes.sql</code></td>
+</tr>
+<tr>
+<td><code>-wal-fsync</code></td>
+<td><code>false</code></td>
+<td>Enable WAL fsync during loading</td>
+</tr>
+<tr>
+<td><code>-load-batch-rows</code></td>
+<td><code>4096</code></td>
+<td>Maximum rows per atomic bulk-load transaction</td>
+</tr>
+<tr>
+<td><code>-json</code></td>
+<td>database&#39;s <code>benchmark.json</code></td>
+<td>Full results and timings</td>
+</tr>
+<tr>
+<td><code>-profile-dir</code></td>
+<td>disabled</td>
+<td>Separate CPU profile for each query</td>
+</tr>
+</tbody></table>
+</div><p>WAL stays enabled. SSTable and MANIFEST synchronization stay enabled. All
+loading, index creation, ANALYZE, close/reopen, persisted row-count checks, view
+setup, preparation, and EXPLAIN happen outside individual query timings. Queries
+run on committed data after reopening. The JSON query-phase duration includes
+preparation, EXPLAIN, result reporting, and profiler start/stop overhead; use the
+individual samples to measure SQL execution.</p>
+<p>SlopDB loading uses <code>Database.BulkInsert</code> with bounded transactions and prepared
+multi-row INSERTs of up to 256 rows. <code>-load-batch-rows</code> bounds transaction rows;
+reports record the bulk mode, configured bound and committed transaction count.
+Constraints, indexes and WAL remain enabled. A malformed row or SQL error rolls
+back its current chunk and fails the load; earlier committed chunks can remain
+in the failed fresh directory. Such a directory is never reused as a successful
+benchmark fixture. The replicated TPC-C storage loader accepts the same flag.</p>
+<p>Samples include elapsed time, process CPU time, Go allocated bytes and allocation
+counts, output row count, status, and error. Allocation counters include
+background Go work during execution. Peak RSS is for the entire process,
+including loading. A timeout measures work before cancellation; its elapsed
+time is a lower bound on completion time. It is never included in a successful
+median. Nonzero exit status reports failed, canceled, or timed out executions;
+the runner still writes the report. Each query&#39;s final successful result is
+saved for independent comparison.</p>
+<h2 id="compare-duckdb-through-its-go-driver">Compare DuckDB through its Go driver</h2>
+<p><code>duckdb/</code> is a separate Go module using
+<a href="https://github.com/duckdb/duckdb-go"><code>github.com/duckdb/duckdb-go/v2</code></a>. Its
+pinned driver is v2.10506.0 (DuckDB v1.5.6), requires CGO and Go 1.24 or newer,
+and leaves SlopDB&#39;s module and runtime dependencies unchanged.</p>
+<pre><code class="language-sh">go -C cmd/tpch/duckdb build -o /tmp/tpch-duckdb .
+/tmp/tpch-duckdb -query-root cmd/tpch -data /tmp/tpch-sf001 \
+  -threads 1 -timeout 5s -json /tmp/tpch-duckdb.json
+
+python3 cmd/tpch/verify.py -h
+python3 cmd/tpch/verify.py --data /tmp/tpch-sf001 \
+  --report /tmp/tpch-slopdb.json --duckdb-report /tmp/tpch-duckdb.json \
+  --out /tmp/tpch-verification.json
+</code></pre>
+<p>Both Go runners use the exact same query files, index definitions, inputs, and
+result materialization. DuckDB uses BIGINT/DOUBLE to match SlopDB&#39;s 64-bit
+INTEGER/REAL rather than DuckDB&#39;s 32-bit INTEGER/REAL types. It loads through the
+native appender, checkpoints a fresh disk database, then reopens and checks row
+counts before querying. Loading is excluded from the query comparison. DuckDB
+runs with one execution thread by default; <code>-threads 4</code> measures parallelism
+separately. The memory limit defaults to 1GB. Its report includes the actual
+engine and toolchain versions, process CPU time, result rows, and physical
+EXPLAIN plans. Go allocation counters would omit its native allocations, so the
+DuckDB runner does not present them as comparable memory usage.</p>
+<p>The standard-library Python verifier loads the same files into SQLite, creates
+the same schema/indexes, checks hashes and row counts, and executes all 22 query
+files. It checks result multisets, numeric tolerance, and declared ORDER BY keys.
+When native reference answers exist, it validates every dialect translation
+against them. It can also validate multiple <code>--duckdb-report</code> files. SQLite&#39;s
+reference database is in memory; its timings are a diagnostic reference rather
+than a comparison of identical storage configurations. Timed-out SlopDB queries
+remain incomplete and cause the verifier to exit unsuccessfully.</p>
+<h2 id="sql-and-dataset-choices">SQL and dataset choices</h2>
+<p>The eight schemas use NOT NULL values, 64-bit integers/reals, and ISO dates
+stored as TEXT. The declared primary keys are clustered in SlopDB. <code>partsupp</code>
+uses a nonunique <code>(ps_partkey, ps_suppkey)</code> index and an implicit row ID because
+DBGEN at very small fractional scales can produce repeated supplier keys for a
+part. Keeping all those rows preserves the generator&#39;s native query answers;
+deduplicating them would change the data. All other logical primary keys remain
+PRIMARY KEY constraints.</p>
+<p>Query changes are limited to SlopDB&#39;s dialect: ISO date constants, SUBSTR for
+year and phone-prefix extraction, explicit equality JOIN ... ON instead of
+comma joins, an explicit Q13 aggregate alias, and a persistent Q15 revenue view
+instead of a CTE. Q15&#39;s view is created before measurement; evaluating it is
+part of query execution. No query is replaced by a precomputed answer. Year
+outputs are ISO year strings instead of integer EXTRACT results. Fixed numeric
+qualification parameters are used at every scale, including Q11&#39;s 0.0001
+threshold; this is not a generated random QGEN stream.</p>
+<p>Fractional scales are for development: SF=0.001 has 6,005 line items. Below this
+scale DuckDB&#39;s generator may produce minimum-size tables rather than linearly
+scaled counts; always inspect the manifest. Small scales also produce empty
+results for several qualification queries. The benchmark accepts normal larger
+DBGEN datasets; the generator never runs during measurement.</p>
+<p>SlopDB EXPLAIN describes eligible join order and available index access. Runtime
+cardinality can change the choice between indexed probes and hash joins, and
+fallback joins/subqueries are not fully described. Use CPU profiles and executor
+source to establish actual work.</p>
+<pre><code class="language-sh">/tmp/slopdb-tpch -data /tmp/tpch-sf001 -queries 3,4,9,20 -timeout 5s \
+  -profile-dir /tmp/tpch-profiles -json /tmp/tpch-profile.json
+go tool pprof -top -cum /tmp/slopdb-tpch /tmp/tpch-profiles/q03.cpu.pprof
+</code></pre>
+<p>Queries follow the qualification definitions in the
+<a href="https://www.tpc.org/TPC_Documents_Current_Versions/pdf/TPC-H_v3.0.1.pdf">TPC-H specification</a>
+and DuckDB&#39;s <a href="https://github.com/duckdb/duckdb/tree/main/extension/tpch">TPC-H extension</a>.
+Local measurements and optimization priorities are in
+<a href="tpch-performance.html">the performance report</a>.</p>
+<p>Measured execution improvements and remaining bottlenecks are documented in <a href="tpch-optimization.html">TPC-H execution improvements</a>.</p>
+<p>The latest indexed joins, selective execution, allocation measurements, and
+TPC-C regression results are in <a href="tpch-join-plans.html">Join execution improvements</a>.</p>
+<p>Both Go runners accept <code>-page-size &lt;bytes&gt;</code> and record the actual configured
+size in JSON. SlopDB targets uncompressed SSTable data blocks; DuckDB uses fixed
+storage blocks. DuckDB rejects 1 MiB (its maximum is 256 KiB).</p>
+<p>For equal-data storage comparisons, build <code>go build -o /tmp/slopdb-bench/storage-snapshot ./cmd/storage-snapshot</code>, the two TPC-H runners, and run
+<code>scripts/storage_page_matrix.py --help</code>. The matrix keeps reports and data
+outside the repository, preserves fresh directories, runs variants serially,
+and records closed versus compacted/VACUUM/checkpoint file and allocated sizes.
+The TPC-C storage fixture uses a portable JSON snapshot with warehouse/history
+IDs shifted per replica; it is separate from the timed transaction workload.
+TPC-H supports independent answer checking through <code>--reference-report</code>.
+Native DuckDB requires its Python package and the existing Linux WAL-only
+preload wrapper for loads with WAL fsync disabled. Unsupported sizes are
+reported as unsupported rather than substituted with a different size.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: cmd/tpch/README.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

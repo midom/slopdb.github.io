@@ -6,6 +6,7 @@
     "build:docs": "node scripts/build-docs.mjs",
     "sync:functions": "node scripts/extract-functions.mjs",
     "check:examples": "node scripts/check-function-examples.mjs",
+    "check:docs": "python3 scripts/check-docs.py",
     "serve": "python3 -m http.server 8080"
   },
   "devDependencies": {

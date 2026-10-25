@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SlopDB — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>SlopDB — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html" aria-current="page">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SLOPDB</p><h1 id="slopdb">SlopDB</h1>
+<p>SlopDB is an embedded SQL database written in Go. It provides a SQLite-like SQL
+dialect, concurrent transactions, a Go API and an interactive command-line
+interface, plus optional MySQL and PostgreSQL protocol servers over TCP and Unix sockets.
+Each database lives in a directory and runs without an external
+database server.</p>
+<h2 id="features">Features</h2>
+<h3 id="queries-and-data">Queries and data</h3>
+<ul>
+<li>SQL querying for application lookups, reporting and analysis.</li>
+<li>Data validation and relational integrity, with text and binary data support.</li>
+<li>Unicode-aware text comparison and optional case-insensitive matching.</li>
+<li>Schema evolution, atomic renames and online index creation and removal.</li>
+</ul>
+<h3 id="transactions-and-concurrency">Transactions and concurrency</h3>
+<ul>
+<li>Independent concurrent sessions and atomic transactions.</li>
+<li>Savepoints, locking reads and optional deadlock detection.</li>
+<li>Configurable wait limits, deadlines and cancellation.</li>
+<li>Optional rollback of blocking transactions during online index publication.</li>
+</ul>
+<h3 id="performance">Performance</h3>
+<ul>
+<li>Indexed query execution and automatic query planning.</li>
+<li>Reusable application queries, streaming results and bulk loading.</li>
+<li>Query planning and profiling tools for investigating slow queries.</li>
+<li>Configurable memory use, compression and caching.</li>
+</ul>
+<h3 id="durability-and-operations">Durability and operations</h3>
+<ul>
+<li>Durable writes and crash recovery enabled by default.</li>
+<li>Online backups, integrity checks and storage maintenance.</li>
+<li>Raft replication with TCP/Unix snapshot cloning, asynchronous learner catch-up, voting promotion and optional bounded-staleness replica reads.</li>
+<li>Permanent non-voting replicas and logs-only quorum voters for two materialized data copies plus a journal.</li>
+<li>Durable replica reads from the previous certified barrier or a newly requested barrier.</li>
+<li>Logical commit-position tokens in commit responses, replica visibility waits and per-query minimum positions.</li>
+<li>Optional async Raft durability with periodic quorum flushes, <code>COMMIT DURABLE</code> barriers and explicit recovery to a certified stable prefix.</li>
+<li>Schema inspection, database status and live lock diagnostics.</li>
+<li>Actionable errors and tools for planning database changes.</li>
+</ul>
+<h3 id="integration-and-tools">Integration and tools</h3>
+<ul>
+<li>An embedded Go API with no external database server.</li>
+<li>An interactive command-line interface and script execution.</li>
+<li>A MySQL protocol server with TCP and Unix sockets, TLS and client certificate authentication, independent sessions and prepared statements.</li>
+<li>PostgreSQL wire emulation with SCRAM authentication, prepared queries, TLS and client certificates.</li>
+<li>Guides for application development, troubleshooting and database operations.</li>
+</ul>
+<p>See the <a href="#documentation">documentation</a> for feature details and restrictions.</p>
+<h2 id="quick-start">Quick start</h2>
+<p>Build from the repository root with Go 1.22.2 or newer:</p>
+<pre><code class="language-sh">go build -o slopdb .
+./slopdb ./example-db
+</code></pre>
+<p>The <a href="getting-started.html">getting started guide</a> walks through creating a
+table, querying data and running scripts.</p>
+<p>To connect using MySQL clients, run <code>./slopdb --mysql-tcp 127.0.0.1:3306 ./example-db</code>
+or use <code>--mysql-socket /tmp/slopdb.sock</code>. See <a href="mysql-server.html">MySQL server</a>
+for authentication, both-listener operation and compatibility limits.</p>
+<p>For PostgreSQL clients, use <code>./slopdb --postgres-tcp 127.0.0.1:5432 ./example-db</code>
+or <code>--postgres-socket /tmp/slopdb-postgres/.s.PGSQL.5432</code>. See
+<a href="postgres-server.html">PostgreSQL emulation</a> for TLS, client certificates and SQL compatibility limits.</p>
+<p>For replicated clusters, see <a href="replication.html">Raft replication</a> for bootstrap,
+clone/join, TLS, membership management and SQL read consistency options.</p>
+<h2 id="using-slopdb-from-go">Using SlopDB from Go</h2>
+<p>The Go API supports querying, concurrent application sessions and transactions,
+with deadlines and cancellation. Options let applications choose resource and
+durability settings.</p>
+<p>The embedded <a href="driver.html"><code>database/sql</code> driver</a> registers as <code>slopdb</code>:
+import <code>_ &quot;slopdb/driver&quot;</code>, then call <code>sql.Open(&quot;slopdb&quot;, directory)</code>. A pool
+uses independent sessions over one shared physical engine. <code>NewConnector</code> can
+also wrap an existing native database without taking ownership of it.</p>
+<p>See <a href="prepared-statements.html">prepared statements</a> for parameter binding and
+transaction examples, and <a href="application-operations.html">application operations</a>
+for working with results, loading data, backups and integrity checks.</p>
+<h2 id="documentation">Documentation</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Guides</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Getting started</td>
+<td><a href="getting-started.html">First database and scripts</a></td>
+</tr>
+<tr>
+<td>Working with data</td>
+<td><a href="sql-semantics.html">Supported behavior</a>, <a href="sql-quoting.html">SQL quoting</a>, <a href="text-collation.html">International text</a>, <a href="sql-surprises.html">Unexpected query results</a></td>
+</tr>
+<tr>
+<td>Changing a database</td>
+<td><a href="alter-table.html">Schema changes</a>, <a href="online-indexes.html">Online changes</a>, <a href="schema-change-planning.html">Planning changes</a></td>
+</tr>
+<tr>
+<td>SQL protocol clients</td>
+<td><a href="mysql-server.html">MySQL server</a>, <a href="postgres-server.html">PostgreSQL emulation</a></td>
+</tr>
+<tr>
+<td>Applications and operations</td>
+<td><a href="prepared-statements.html">Application queries</a>, <a href="application-operations.html">Operations</a>, <a href="table-status.html">Table status</a>, <a href="diagnostics.html">Troubleshooting</a></td>
+</tr>
+<tr>
+<td>Performance</td>
+<td><a href="query-profiling.html">Profiling</a>, <a href="query-memory.html">Resource use</a>, <a href="catalog-performance.html">Measurements</a></td>
+</tr>
+</tbody></table>
+</div><h2 id="tests-and-benchmarks">Tests and benchmarks</h2>
+<pre><code class="language-sh">go test ./... -count=1 -timeout 10m
+go test -race ./... -count=1 -timeout 10m
+go vet ./...
+</code></pre>
+<p>The repository includes SQL reference fixtures, concurrency and transaction
+tests, corruption checks and crash-recovery tests. Ordinary Go tests use isolated
+temporary databases and require no external database engine. See
+<a href="testing.html">TESTING.md</a> for selective commands and coverage.</p>
+<ul>
+<li><a href="benchmark-tool-tpcc.html">TPC-C-inspired load tester</a>: concurrent transactional work,
+latency measurements and consistency checks.</li>
+<li><a href="benchmark-tool-tpch.html">TPC-H query runner</a>: all 22 query shapes on DBGEN inputs,
+with complete-result verification.</li>
+<li><a href="benchmark-tool-tpcc-compare.html">Engine comparisons</a>: SlopDB, SQLite and DuckDB.</li>
+<li><a href="performance-regressions.html">Performance checks</a>: repeatable measurements,
+microbenchmarks and CI artifacts.</li>
+</ul>
+<p>These are development benchmarks rather than certified TPC scores. Compare runs
+with matching data, concurrency, execution mode and durability settings.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: README.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

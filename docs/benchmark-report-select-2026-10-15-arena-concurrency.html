@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="SELECT concurrency after counter and reference changes — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>SELECT concurrency after counter and reference changes — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html" aria-current="page">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / SELECT CONCURRENCY AFTER COUNTER AND REFERENCE CHANGES</p><h1 id="select-concurrency-after-counter-and-reference-changes">SELECT concurrency after counter and reference changes</h1>
+<h2 id="changes">Changes</h2>
+<ul>
+<li>Prepared plan statistics use 128 padded counter shards. Each private bound AST selects a shard at creation and keeps it through plan invalidation. PlanStats sums all shards. No global counter is changed on a plan hit.</li>
+<li>Cached pages use aligned atomic reference counts inside the mmap arena. Normal pins and releases do not take the arena mutex. The last release takes the mutex to free and coalesce the allocation. CLOCK reference bits also use atomics. The mapping slice header stays fixed after allocation, with a separate unmap state for safe concurrent close.</li>
+<li>Prepared point SELECTs decode only fields needed by the projection and WHERE predicate. Unneeded text and BLOB fields are skipped.</li>
+<li>Session.ExecPreparedInto reuses caller-owned column records, row maps, and BLOB buffers. It follows the normal execution, snapshot, transaction, and cancellation paths. The current ExecPrepared API still returns independent results that callers can retain.</li>
+</ul>
+<h2 id="method">Method</h2>
+<p>These measurements used mmap cache memory before the memory selector and the
+final block validation error fix were added.
+The raw artifacts contain the exact measured binaries and source. Mmap remains
+the default; heap mode can now be selected through <code>Options.BlockCacheMemory</code>.</p>
+<p>Same database: 138,864,149 rows, 145 unchanged SSTables, 10,000,026,972 bytes on disk. Each encoded SQL row is 84 bytes (80 bytes of user data). The decoded page working set is 12.64 GiB. No data was regenerated. The benchmark uses uniform random keys and the prepared query <code>SELECT id,v,payload FROM bench WHERE id=?</code>. Each reader has its own session; readers share the prepared statement. Every returned row is checked.</p>
+<p>Machine: 96 AMD EPYC virtual CPUs, Go 1.26.7. Every Go process used GOGC=200 and GOMAXPROCS=96. GOMEMLIMIT was not explicitly set. Caches use LRU. Operating system file pages were warm.</p>
+<p>For the 20 GiB comparison, each process warms each reader count for 10 seconds and alternates 96 and 200 readers over three 15-second timed samples per count. The old binary already has the mmap arena; the comparison measures the new counter, reference, and result changes. Throughput runs have no profiling enabled. Resource columns show separate medians across the samples.</p>
+<h2 id="20-gib-cache">20 GiB cache</h2>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Code and API</th>
+<th align="right">Readers</th>
+<th align="right">Million SELECT/s</th>
+<th align="right">Sample range</th>
+<th align="right">Busy cores</th>
+<th align="right">Mean µs</th>
+<th align="right">p99 µs</th>
+<th align="right">Allocated bytes/SELECT</th>
+<th align="right">Allocations/SELECT</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Before, current API</td>
+<td align="right">96</td>
+<td align="right">7.26</td>
+<td align="right">6.63–8.10</td>
+<td align="right">70.5</td>
+<td align="right">13.0</td>
+<td align="right">29.4</td>
+<td align="right">1857</td>
+<td align="right">15.00</td>
+</tr>
+<tr>
+<td>Before, current API</td>
+<td align="right">200</td>
+<td align="right">6.73</td>
+<td align="right">6.01–6.80</td>
+<td align="right">61.2</td>
+<td align="right">29.4</td>
+<td align="right">67.2</td>
+<td align="right">1857</td>
+<td align="right">15.00</td>
+</tr>
+<tr>
+<td>After, current API</td>
+<td align="right">96</td>
+<td align="right">8.12</td>
+<td align="right">7.87–8.31</td>
+<td align="right">69.3</td>
+<td align="right">11.5</td>
+<td align="right">29.1</td>
+<td align="right">1857</td>
+<td align="right">15.00</td>
+</tr>
+<tr>
+<td>After, current API</td>
+<td align="right">200</td>
+<td align="right">7.03</td>
+<td align="right">6.89–7.31</td>
+<td align="right">61.0</td>
+<td align="right">28.2</td>
+<td align="right">35.8</td>
+<td align="right">1857</td>
+<td align="right">15.00</td>
+</tr>
+<tr>
+<td>After, buffer reuse</td>
+<td align="right">96</td>
+<td align="right">14.41</td>
+<td align="right">14.34–14.44</td>
+<td align="right">91.0</td>
+<td align="right">6.4</td>
+<td align="right">12.8</td>
+<td align="right">169</td>
+<td align="right">8.00</td>
+</tr>
+<tr>
+<td>After, buffer reuse</td>
+<td align="right">200</td>
+<td align="right">14.62</td>
+<td align="right">14.60–14.76</td>
+<td align="right">91.6</td>
+<td align="right">13.4</td>
+<td align="right">19.0</td>
+<td align="right">169</td>
+<td align="right">8.00</td>
+</tr>
+</tbody></table>
+</div><p>At 200 readers, the current API increased median throughput by 4.4%. Buffer reuse increased it by 117.2% against the old binary, and 108.0% against the new current API. Allocated bytes per SELECT fell by 90.9%.</p>
+<p>With buffer reuse, 200 readers increased throughput by 1.5% over 96 readers. CPU use was about 91–92 of the 96 cores. The cache had no measured misses or allocation failures during these fitting-cache runs.</p>
+<p>The old control had visible variation at 96 readers (6.63–8.10 million/s). The smaller gains with the current API should be read with that variation in mind. Buffer reuse has a much larger gain and a narrow sample range. It is a separate API that must be selected by the caller; its gains do not apply automatically to retained results from ExecPrepared.</p>
+<h2 id="200-readers-with-smaller-caches">200 readers with smaller caches</h2>
+<p>The 1 and 10 GiB cases each have a fresh process, a 10-second warmup, and two 15-second timed samples per API. The 20 GiB row uses the three-sample comparison above.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th align="right">Cache GiB</th>
+<th align="right">Current API, million SELECT/s</th>
+<th align="right">Buffer reuse, million SELECT/s</th>
+<th align="right">Gain from reuse</th>
+<th align="right">Busy cores with reuse</th>
+<th align="right">Reuse mean µs</th>
+<th align="right">Reuse p99 µs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">1</td>
+<td align="right">4.82</td>
+<td align="right">6.89</td>
+<td align="right">42.8%</td>
+<td align="right">91.6</td>
+<td align="right">28.8</td>
+<td align="right">554.2</td>
+</tr>
+<tr>
+<td align="right">10</td>
+<td align="right">6.48</td>
+<td align="right">11.37</td>
+<td align="right">75.5%</td>
+<td align="right">91.6</td>
+<td align="right">17.3</td>
+<td align="right">332.0</td>
+</tr>
+<tr>
+<td align="right">20</td>
+<td align="right">7.03</td>
+<td align="right">14.62</td>
+<td align="right">108.0%</td>
+<td align="right">91.6</td>
+<td align="right">13.4</td>
+<td align="right">19.0</td>
+</tr>
+</tbody></table>
+</div><h2 id="use-the-reusable-destination">Use the reusable destination</h2>
+<pre><code class="language-go">var result db.ExecResult
+_, err := session.ExecPreparedInto(&amp;result, stmt, id)
+</code></pre>
+<p>Use one destination per reader. Consume the result before the next call that uses that destination. Do not retain aliases to its rows, column slice, or BLOBs across calls. Old contents are given up on entry; contents are unspecified on error. General SELECTs and writes use their normal executor and replace the destination. Context and option variants are documented in <code>docs/prepared-statements.md</code>.</p>
+<h2 id="verification">Verification</h2>
+<p>All query checks passed. There were no arena allocation failures. The SSTable names and sizes still match the prior inventory.</p>
+<ul>
+<li><code>GOGC=200 GOMAXPROCS=96 go test ./... -count=1 -timeout 10m</code> passed.</li>
+<li><code>GOGC=200 GOMAXPROCS=96 go test -race ./... -count=1 -timeout 10m</code> passed.</li>
+<li><code>GOGC=200 GOMAXPROCS=96 go vet ./...</code> passed.</li>
+<li><code>git diff --check</code> passed.</li>
+</ul>
+<p>The new tests cover 200 concurrent readers with exact counter totals, references while the allocator mutex is held, eviction and close, destination reuse across missing rows and query changes, retained ordinary results, catalog invalidation, cancellation, NULL and empty BLOBs, skipped fields, and predicates that read fields outside the projection.</p>
+<p>The final commit review found that returning a failed reader to its pool cleared
+its validation error before the error was returned. The fix saves the error
+before release. A new test rejects malformed raw, Snappy, and Zstd blocks with
+valid checksums. It failed before the fix. The storage suite, storage race suite,
+and storage vet passed after the fix with GOGC=200. This error path does not run
+for the valid benchmark rows; throughput was not measured again after the fix.</p>
+<p>The first full race run found a race when close cleared the mapping slice header. The fixed header and separate unmap state passed five repeated close race tests and the final full race suite. The failed initial log is kept with the raw artifacts.</p>
+<h2 id="profiles">Profiles</h2>
+<p>Separate 10-second profiles at 200 readers and a 20 GiB cache are excluded from throughput tables. They include CPU, mutex, block, and allocation samples. Allocation profiles also include startup and warmup.</p>
+<ul>
+<li>The arena pin and nonfinal release mutex waits are gone. Remaining application lock waits mainly come from snapshot registration and release, with a smaller contribution from read-view registration.</li>
+<li><code>runtime.mallocgc</code>, including allocation refill and sweep work, accounts for 29.33% of CPU samples with the current API and 3.36% with buffer reuse. These inclusive costs overlap with their callers.</li>
+<li>The buffer reuse allocation profile is dominated by the query cancellation context. Row maps and copied result column records are no longer allocated on each warm point SELECT.</li>
+<li>Table index search uses 7.17% of CPU samples in the reuse profile; block entry header decoding uses 6.94% flat CPU. These and snapshot bookkeeping are remaining costs after the requested changes.</li>
+</ul>
+<h2 id="artifacts">Artifacts</h2>
+<p>Raw logs, JSON samples, profiles, scripts, binary hashes, source archive, and fixture inventory: <code>/tmp/slopdb-select-bench-20261014/arena/readers200-improved</code>.</p>
+<p>Before binary SHA-256: <code>d7c89eec4ec3db7fe0b801f3625532903f8bfad8bfd5c4799399de771037c38b</code>.
+After binary SHA-256: <code>968b5a5b7f9e45df4ed6dcff9e64b737d86c8b2b1d8403a62c1560de02c8ad8d</code>.</p>
+<p>The tracked base for these measurements is main <code>6143e41</code>. <code>changed-source.zip</code> includes the new files as well as tracked modifications. The benchmark uses the same Go engine for current and reuse APIs; <code>-reuse-result</code> selects the new method in the harness.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/benchmarks/select/2026-10-15/arena-concurrency.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

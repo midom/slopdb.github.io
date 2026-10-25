@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en" class="documentation"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Raft tail latency investigation — SlopDB documentation. An embedded SQL database written in Go."><meta name="theme-color" content="#f6f7f1"><title>Raft tail latency investigation — SlopDB</title><link rel="icon" href="../assets/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="../styles.css"><script src="../site.js" defer></script></head><body><a class="skip-link" href="#main">Skip to content</a><header class="site-header docs-header wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="140" height="38" alt="slopdb"></a><nav aria-label="Main navigation"><a href="../">← Home</a><a href="./">Documentation</a></nav><a class="github-link" href="https://github.com/midom/slopdb">GitHub ↗</a></header><div class="docs-layout wrap"><button class="docs-toggle" aria-expanded="false" aria-controls="docs-sidebar">Browse documentation <span aria-hidden="true">⌄</span></button><aside class="docs-sidebar" id="docs-sidebar" aria-label="Documentation navigation"><label class="visually-hidden" for="docs-search">Filter guides by title</label><input type="search" id="docs-search" placeholder="Filter guides…" autocomplete="off"><a href="./">Documentation overview</a><div class="nav-section"><p class="nav-group">Start here</p><a href="getting-started.html">Getting started</a><a href="sql-semantics.html">SQL support &amp; semantics</a><a href="sql-quoting.html">SQL quoting</a></div><div class="nav-section"><p class="nav-group">Function reference</p><a href="sql-functions.html">Find a SQL function</a><a href="functions-core.html">Core SQL functions</a><a href="functions-json.html">JSON functions</a><a href="functions-mysql.html">MySQL-style functions</a><a href="functions-postgres.html">PostgreSQL functions</a><a href="functions-aggregate.html">Aggregate functions</a><a href="functions-window.html">Window function reference</a></div><div class="nav-section"><p class="nav-group">Build applications</p><a href="driver.html">Embedded database/sql driver</a><a href="prepared-statements.html">Prepared statements</a><a href="application-operations.html">Application operations</a><a href="common-table-expressions.html">Common table expressions</a><a href="window-functions.html">Window functions</a><a href="upsert.html">UPSERT</a><a href="text-collation.html">Unicode &amp; collation</a></div><div class="nav-section"><p class="nav-group">Connect &amp; replicate</p><a href="mysql-server.html">MySQL server</a><a href="postgres-server.html">PostgreSQL emulation</a><a href="replication.html">Raft replication</a><a href="mysql-cdc.html">MySQL CDC &amp; typed changefeed</a></div><div class="nav-section"><p class="nav-group">Manage your database</p><a href="catalogs.html">Shared catalogs</a><a href="activity.html">Live session activity</a><a href="alter-table.html">Schema changes</a><a href="online-indexes.html">Online indexes</a><a href="schema-change-planning.html">Planning changes</a><a href="table-status.html">Table status</a><a href="diagnostics.html">Troubleshooting &amp; LSM status</a><a href="sql-surprises.html">Unexpected query results</a></div><div class="nav-section"><p class="nav-group">Application compatibility</p><a href="mysql-functions.html">MySQL function compatibility</a><a href="postgres-compatibility.html">PostgreSQL compatibility</a><a href="mediawiki.html">MediaWiki</a><a href="wordpress.html">WordPress</a></div><div class="nav-section"><p class="nav-group">Understand performance</p><a href="query-profiling.html">Query profiling</a><a href="query-statistics.html">Query statistics</a><a href="query-memory.html">Memory &amp; resources</a><a href="page-sizes.html">Page sizes</a><a href="catalog-performance.html">Performance measurements</a><a href="performance-regressions.html">Performance checks</a><a href="testing.html">Tests &amp; benchmarks</a></div><div class="nav-section"><p class="nav-group">Benchmark tools</p><a href="benchmark-tool-select-bench.html">Concurrent small-row SELECT benchmark</a><a href="benchmark-tool-storage-sql.html">Canonical SQL storage measurements</a><a href="benchmark-tool-tpcc.html">SlopDB TPC-C-style load tester</a><a href="benchmark-tool-tpcc-compare.html">Three-engine TPC-C-style comparison</a><a href="benchmark-tool-tpch.html">TPC-H query benchmark</a><a href="benchmark-tool-write-bench.html">Concurrent write benchmark</a></div><div class="nav-section"><p class="nav-group">Engine &amp; query details</p><a href="block-cache-arena.html">Block cache memory</a><a href="canonical-storage-comparison.html">Canonical SQL storage comparison, 2026-10-12</a><a href="memtable.html">Memtable options</a><a href="page-size-comparison.html">Database page-size comparisons</a><a href="page-size-protocol.html">Page-size measurement protocol</a><a href="project-improvements.html">Execution, APIs and SQL improvements</a><a href="q6-access-regression.html">Q6 physical access regression</a><a href="small-row-select-final-optimizations.html">Further small-row SELECT improvements</a><a href="small-row-select-gogc-200.html">GOGC=200 with the default memory limit</a><a href="small-row-select-performance.html">Small-row SELECTs with 100 concurrent readers</a><a href="small-row-select-scaling.html">Scaling small-row SELECTs beyond the initial cache fixes</a><a href="storage-comparison.html">Database storage comparisons</a><a href="storage-large-comparison.html">Storage comparisons above 100 MiB</a><a href="tpcc-comparison.html">TPC-C-style comparison, 2026-10-11</a><a href="tpch-join-plans.html">Indexed joins, selective execution, and allocation improvements</a><a href="tpch-optimization.html">TPC-H execution improvements, 2026-10-11</a><a href="tpch-ordered-aggregation.html">Ordered GROUP BY and TPC-H Q18</a><a href="tpch-performance.html">TPC-H execution performance, 2026-10-11</a><a href="typed-execution.html">Typed analytical execution</a></div><div class="nav-section"><p class="nav-group">Benchmark reports</p><a href="benchmark-report-improvements.html">Paired SlopDB improvement measurements</a><a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">Conditional COMMIT index cleanup</a><a href="benchmark-report-raft-2026-10-24-latency-investigation.html" aria-current="page">Raft tail latency investigation</a><a href="benchmark-report-raft-2026-10-24-logs-only.html">One full Raft node and two logs-only voters</a><a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">Background WAL rotation fsync</a><a href="benchmark-report-select-2026-10-15-arena-concurrency.html">SELECT concurrency after counter and reference changes</a><a href="benchmark-report-storage-pages-canonical.html">Canonical SQL storage evidence</a><a href="benchmark-report-storage-pages-canonical-tpcc.html">Canonical TPC-C storage evidence</a><a href="benchmark-report-storage-pages-matched-window.html">Matched-window, fully compacted SlopDB storage evidence</a><a href="benchmark-report-storage-pages.html">Historical page-size evidence with fixed 8 MiB Zstd windows</a><a href="benchmark-report-write-2026-10-16-batch100-inserts.html">INSERT performance with 100 rows per transaction</a><a href="benchmark-report-write-2026-10-16-concurrent-skip-list.html">Concurrent skip list and parallel memtable installation</a><a href="benchmark-report-write-2026-10-16-concurrent-writers.html">Concurrent writes: 96 and 200 writers</a><a href="benchmark-report-write-2026-10-16-insert-retry.html">INSERT retry with optional hash memtables and WAL disabled</a><a href="benchmark-report-write-2026-10-16-optional-memtable-no-wal.html">Optional hash memtables and WAL-disabled random UPDATE</a><a href="benchmark-report-write-2026-10-16-random-update-million.html">Random UPDATE above one million transactions/s</a></div><div class="nav-section"><p class="nav-group">Project overview</p><a href="project-overview.html">SlopDB</a></div><p class="no-results" hidden>No matching guides.</p></aside><main class="doc-article" id="main"><p class="doc-breadcrumb">SLOPDB / DOCUMENTATION / RAFT TAIL LATENCY INVESTIGATION</p><h1 id="raft-tail-latency-investigation">Raft tail latency investigation</h1>
+<p>Follow-up to <a href="benchmark-report-raft-2026-10-24-logs-only.html">the journal-voter benchmark</a>, on the same <code>test</code> host
+and production base <code>11b39400f663</code>. One full leader, two logs-only voters,
+128 clients, TCP loopback, ext4 databases, Go 1.22.2, <code>GOMAXPROCS=60</code>.
+The workload remains one explicit transaction with one prepared increment of a
+private row. Production source paths were examined through isolated build
+overlays; the repository changes add opt-in benchmark diagnostics.</p>
+<h2 id="findings">Findings</h2>
+<p>The large tail is predominantly time <strong>blocked on protocol completion and
+storage/catalog locks</strong>. It is not explained by an unspecified scheduling delay.
+In the slowest approximately 1% of traced transactions, synchronization waits
+account for 98.2% of sync elapsed time and 93.8% of async elapsed time.
+Ready-to-run scheduler time accounts for 1.3% and 4.6%, respectively. Trace
+instrumentation changes timings; these fractions describe the diagnostic traces.</p>
+<ol>
+<li><p><strong>Async still performs synchronous I/O at memtable rotation and flush.</strong>
+<code>storage/lsm.go:822</code> calls <code>syncWAL()</code> before rotating an old WAL, while holding
+the writer and LSM mutexes. The background flush releases the LSM mutex to
+collect immutable rows. <code>writeTableLocked()</code> also releases it around SSTable
+build/sync (<code>storage/lsm.go:1059</code>), then reacquires it. Manifest publication
+remains under the mutex (<code>storage/lsm.go:1266</code>), so its file/directory syncs
+block writers. Writers can also wait for the single immutable table to flush.
+<code>diskStore.StoreLogs()</code> holds its own mutex while entering storage, propagating those stalls into Raft replication and the leader loop.</p>
+<p>With periodic durability flushing disabled for the timed window and GC off,
+<code>strace</code> still recorded <strong>116 timed fsync/fdatasync calls</strong> with 4 MiB buffers.
+Journal consensus-WAL syncs reached <strong>18.0 ms and 21.9 ms</strong> on nodes 2 and 3;
+SST syncs reached 17.2 ms. About <strong>90% of the slowest 1%</strong> of transactions in
+that instrumented run overlapped a sync call, versus <strong>4.1% of all transactions</strong>.
+These syscall durations include tracing effects.</p>
+<p>A matched, untraced control changed only application and consensus buffers
+from <strong>4 MiB to 128 MiB</strong>, keeping cleanup bypass, periodic-flush bypass and
+GC-off settings identical. Its p99 fell from <strong>9.85 ms to 2.50 ms</strong>, while
+median latency stayed near 1.2 ms. A separate large-buffer syscall trace
+recorded <strong>zero</strong> fsync/fdatasync calls inside timing. The larger buffers
+postpone rotation in this short workload; they are not a long-run fix.</p>
+</li>
+<li><p><strong>Sync UPDATE admission performs an additional fresh quorum round.</strong>
+<code>Node.checkSQL()</code> calls <code>VerifyLeader()</code> before UPDATE (<code>replication/node.go:561</code>)
+even though COMMIT subsequently performs actual Raft consensus. Verification
+requests queue through the Raft leader loop alongside log persistence.
+The sync trace attributes about 67.6% of tail synchronization wait to this
+admission path and about 30.8% to the commit proposal path. Native-application
+catch-up in <code>waitApplied()</code> contributes little in these profiles.</p>
+<p>An isolated probe bypassing only the extra statement-admission verification
+reduced diagnostic sync p99 from <strong>51.54 ms to 19.57 ms</strong>; actual commit quorum
+replication and fsync remained enabled. This probe changes read admission and
+must not be deployed as a general fix. A safe optimization must preserve
+freshness, for example by batching appropriate fresh verification requests.</p>
+</li>
+<li><p><strong>Every COMMIT performs index cleanup under the global catalog write lock.</strong>
+<code>db/database.go:382</code> calls <code>CleanupIndexGarbage()</code> after COMMIT/RELEASE, and
+<code>sql/index_cleanup.go:78</code> takes the exclusive catalog gate before checking
+whether cleanup metadata exists. The fixture has no secondary indexes or
+pending cleanup. This unnecessarily serializes catalog snapshot acquisition.
+The async trace shows substantial waits in <code>StartStatement()</code> and the cleanup
+gate. Skipping this no-op only for the controlled fixture raised throughput
+from <strong>32.5k to 76.4k tx/s</strong> and reduced median latency from <strong>3.56 ms to 1.16 ms</strong>.
+Its p99 remained <strong>10.75 ms</strong>, so it explains the common-path bottleneck but
+does not remove the rotation/flush tail by itself.</p>
+</li>
+</ol>
+<p>Disabling GC alone changed p99 only from 11.35 ms to 11.16 ms. Moving periodic
+certification outside the measured window changed it to 10.76 ms. Neither
+removed the tail. The storage rotation/flush critical sections remain active
+in both controls.</p>
+<h2 id="stage-measurements">Stage measurements</h2>
+<p>These runs record every transaction without execution tracing or contention
+profiling. Sync uses 25,000 transactions; async uses 250,000.
+The tail columns are averages across the slowest approximately 1% of each run,
+not sums of independently calculated stage percentiles.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th align="right">Transaction p99</th>
+<th align="right">Tail mean total</th>
+<th align="right">BEGIN share</th>
+<th align="right">UPDATE share</th>
+<th align="right">COMMIT share</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sync</td>
+<td align="right">51.54 ms</td>
+<td align="right">63.77 ms</td>
+<td align="right">0.4%</td>
+<td align="right">66.5%</td>
+<td align="right">33.2%</td>
+</tr>
+<tr>
+<td>Async</td>
+<td align="right">11.35 ms</td>
+<td align="right">14.92 ms</td>
+<td align="right">7.1%</td>
+<td align="right">38.2%</td>
+<td align="right">54.7%</td>
+</tr>
+</tbody></table>
+</div><h2 id="diagnostic-controls">Diagnostic controls</h2>
+<p>Single probes on the same fixture, with stage timing enabled. They isolate
+mechanisms rather than establish statistically significant performance scores.
+All cases passed exact row totals, integrity and journal-reconstruction checks.
+The preceding three-repeat benchmark remains the reference default-settings result.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Probe</th>
+<th align="right">tx/s</th>
+<th align="right">p50, ms</th>
+<th align="right">p99, ms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sync</td>
+<td>Default diagnostic baseline</td>
+<td align="right">5,031</td>
+<td align="right">23.427</td>
+<td align="right">51.544</td>
+</tr>
+<tr>
+<td>Sync</td>
+<td>Skip empty cleanup</td>
+<td align="right">4,519</td>
+<td align="right">24.536</td>
+<td align="right">66.598</td>
+</tr>
+<tr>
+<td>Sync</td>
+<td>Bypass extra admission quorum</td>
+<td align="right">9,203</td>
+<td align="right">13.567</td>
+<td align="right">19.575</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>Default diagnostic baseline</td>
+<td align="right">32,472</td>
+<td align="right">3.556</td>
+<td align="right">11.347</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>Skip empty cleanup</td>
+<td align="right">76,436</td>
+<td align="right">1.157</td>
+<td align="right">10.750</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>GC off</td>
+<td align="right">33,273</td>
+<td align="right">3.557</td>
+<td align="right">11.163</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>Skip cleanup + GC off</td>
+<td align="right">81,562</td>
+<td align="right">1.159</td>
+<td align="right">10.435</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>Bypass extra admission quorum</td>
+<td align="right">37,855</td>
+<td align="right">3.086</td>
+<td align="right">9.808</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>No periodic flush in timed window</td>
+<td align="right">33,849</td>
+<td align="right">3.546</td>
+<td align="right">10.756</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>Skip cleanup + no periodic flush</td>
+<td align="right">80,383</td>
+<td align="right">1.172</td>
+<td align="right">10.328</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>Skip cleanup + no periodic flush + GC off</td>
+<td align="right">84,468</td>
+<td align="right">1.149</td>
+<td align="right">9.846</td>
+</tr>
+<tr>
+<td>Async</td>
+<td>Same triple control + 128 MiB buffers</td>
+<td align="right">97,440</td>
+<td align="right">1.221</td>
+<td align="right">2.498</td>
+</tr>
+</tbody></table>
+</div><p>The no-periodic-flush overlay uses a one-hour interval and two-hour lag bound;
+startup and the final explicit stable barrier still run. This changes the
+configured durability window and is only a diagnostic control. No general
+read-consistency or durability relaxation is included in production code.</p>
+<h2 id="tooling-and-validation">Tooling and validation</h2>
+<p><code>replication/latency_benchmark_test.go</code> adds three opt-in flags, intended for
+one benchmark case and one sample:</p>
+<ul>
+<li><code>-raft-bench-latencies /outside/repo/stages.json</code>: per-transaction monotonic
+BEGIN/UPDATE/COMMIT timings, worker IDs and offsets, plus epoch window bounds.</li>
+<li><code>-raft-bench-trace /outside/repo/runtime.trace</code>: timed execution trace with
+transaction and statement regions, associated with worker tasks.</li>
+<li><code>-raft-bench-contention /outside/repo/prefix</code>: timed block and mutex profiles.</li>
+</ul>
+<p>The existing <code>-raft-bench-timed-cpu</code> flag captures CPU profiles. Timers stop
+before profile serialization, SQL integrity checks and recovery. Collection
+bookkeeping was tightened after the investigation so CPU profiling also stops
+before diagnostic serialization. The initial combined CPU profiles include
+serialization overhead and were not used for the conclusions here; stage data,
+trace regions, synchronization profiles and syscall evidence support them.
+The results distinguish measured source hashes from the final tooling hashes;
+measured sources are archived outside the repository. Diagnostic
+build overlays remain outside the repository in
+<code>/tmp/slopdb-bench/raft-latency-20261024/overlay/</code> locally and
+<code>/tmp/slopdb-bench/slopdb-raft-latency-20261024/overlay/</code> on <code>test</code>.
+Their hashes and invocation arguments are recorded in the results JSON.</p>
+<p>All replication tests and a diagnostics-enabled benchmark smoke case passed
+with <code>-race</code> on <code>test</code>; <code>go vet ./replication</code> and whitespace checks passed.
+The smoke output was additionally checked for record count, stage-sum equality,
+all worker IDs, and readable trace/profile files. Runtime controls and syscall
+tracing are separate from the ordinary benchmark score. Raw traces, profiles,
+per-transaction data and command logs remain outside the repository under
+<code>/tmp/slopdb-bench/slopdb-raft-latency-20261024/</code> on <code>test</code>, with summaries and
+selected raw data copied to <code>/tmp/slopdb-bench/raft-latency-20261024/</code> locally.</p>
+<p><a href="https://github.com/midom/slopdb/blob/main/docs/benchmarks/raft/2026-10-24/latency-investigation-results.json">Summaries, source/overlay hashes, commands and validation evidence</a>.</p>
+<h2 id="production-targets">Production targets</h2>
+<p>Move manifest sync work outside the LSM publication mutex using serialized,
+durable version publication; preserve the existing unlocked SSTable build/sync.
+Decouple asynchronous WAL-generation synchronization from foreground admission while ensuring durability certificates
+cover every relevant generation. Skip index-cleanup locking/scans when no work
+is pending. Reduce fresh verification overhead without serving stale leader
+reads. Larger buffers and bypassed checks demonstrate the costs; they do not
+replace these correctness requirements.</p>
+<p>The <a href="benchmark-report-raft-2026-10-24-commit-index-cleanup.html">conditional COMMIT cleanup follow-up</a> implements
+the cleanup fast path with transactional drops, rollback and error retries
+preserved, and measures it against the original production code.
+The <a href="benchmark-report-raft-2026-10-24-wal-background-sync.html">background WAL synchronization follow-up</a> moves
+rotation fsync outside storage locks while making durable barriers cover every
+earlier generation, with deterministic blocking tests and matched measurements.</p>
+<div class="doc-meta"><span>Rendered from the project documentation · 49150cf</span><span>Source: docs/benchmarks/raft/2026-10-24/latency-investigation.md</span></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
