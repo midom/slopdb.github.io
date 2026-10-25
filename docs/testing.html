@@ -356,6 +356,17 @@ casts, declarations, independent PostgreSQL binary fixtures and client codecs.
 prepared/materialized/streaming SELECT, RETURNING, UNION, joins, aggregates and
 windows. PostgreSQL/MySQL protocol and CLI output tests preserve duplicate
 labels while retaining each result slot.</p>
+<p><code>sql/cursor_reuse_test.go</code> and <code>db/stream_reuse_public_test.go</code> retain 1,000-row
+results across cursor movement, SSTable page changes, Close and transaction
+overlays. They cover independently owned <code>Next</code>, alternating <code>NextInto</code>
+destinations, duplicate/aliased/function BLOB projections, NULL/empty BLOBs,
+native/MySQL/PostgreSQL sessions and embedded <code>database/sql</code> scanning.
+<code>storage/reusable_iterator_test.go</code> checks ordinary iterator ownership alongside
+borrowed range iterators, snapshots, reverse direction changes, range deletes,
+heap/mmap caches, compaction and bounded scratch retention. Allocation benchmarks
+include <code>BenchmarkStreamingRangeResultStorage</code>, <code>BenchmarkReusableRangeIterator</code>
+and <code>BenchmarkPacketWriterReuse</code>; setup stays outside timing and results are
+checked without machine-dependent performance assertions.</p>
 <p><code>postgresserver/copy_test.go</code> exercises pgx.CopyFrom, lib/pq.CopyIn, text/CSV/binary
 streams, typed values, protocol fragmentation, cancellation, failure recovery
 and transaction atomicity. All databases and protocol test artifacts use
@@ -382,4 +393,4 @@ notification, then verifies delivery recovers without a new log entry. It also
 covers certificate coalescing, failure backoff, blocked-request shutdown and
 real leadership-transfer cancellation. The dropped-notification case was
 confirmed to fail against the previous one-shot sender.</p>
-<div class="doc-meta"><span>Rendered from the project documentation · adbd3a6</span><a href="https://github.com/midom/slopdb/blob/main/TESTING.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
+<div class="doc-meta"><span>Rendered from the project documentation · f426887</span><a href="https://github.com/midom/slopdb/blob/main/TESTING.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>

@@ -49,6 +49,11 @@ owns the connection&#39;s session snapshot. A second operation on the same conne
 returns an error while rows remain open. Queries on other connections continue.
 Cancellation releases native streaming resources, and returned/scanned BLOBs do
 not alias storage pages or later results.</p>
+<p>Native streaming rows reuse their private row maps and BLOB decoding buffers
+between calls. The driver inherits this reuse while preserving the ownership
+and lifetime rules of values returned through <code>database/sql</code>. Scanning BLOBs
+into <code>[]byte</code> or <code>any</code> returns independent bytes. <code>database/sql.RawBytes</code> follows
+its standard borrowed lifetime, ending at the next <code>Next</code>, <code>Scan</code> or <code>Close</code>.</p>
 <p><code>BeginTx</code> supports default, READ COMMITTED, and native REPEATABLE READ isolation.
 Read-only and other isolation options fail explicitly. Commit and rollback use
 the same connection/session as their statements. Errors after execution are
@@ -67,4 +72,4 @@ The driver adds no network transport and no separate storage engine.</p>
 <h2 id="plain-queries-and-prepared-execution">Plain queries and prepared execution</h2>
 <p>A <code>QueryContext</code> or <code>QueryRowContext</code> call without arguments uses the native text-query path without allocating a prepared-statement pool. Eligible SELECTs stream; complex SELECTs use the native materialized fallback. Each query must contain exactly one statement, including WITH queries and mutations with RETURNING. Statement validation happens before executing a mutation, and RETURNING executes that mutation once.</p>
 <p>Queries with bound arguments and explicitly prepared statements use the prepared path. Session-owned bindings retain their private execution tree across garbage collections; catalog or statistics changes and transaction rollback still invalidate plans. See <a href="prepared-statements.html">prepared statements</a> for plan counters and result-buffer reuse.</p>
-<div class="doc-meta"><span>Project documentation and source-verified API notes · adbd3a6</span><a href="https://github.com/midom/slopdb/blob/main/docs/driver.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
+<div class="doc-meta"><span>Project documentation and source-verified API notes · f426887</span><a href="https://github.com/midom/slopdb/blob/main/docs/driver.md">View source on GitHub ↗</a></div></main></div><footer class="site-footer wrap"><a class="brand" href="../" aria-label="SlopDB home"><img src="../assets/logo.svg" width="120" height="32" alt="slopdb"></a><p>An embedded SQL database. A little personality.</p><div><a href="../">Home</a><a href="https://github.com/midom/slopdb">Source ↗</a><a href="https://github.com/midom/slopdb/blob/main/LICENSE">Apache 2.0</a></div></footer></body></html>
