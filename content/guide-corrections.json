@@ -5,7 +5,6 @@
     "replacement": "FOUND_ROWS reports the preceding SELECT's returned row count, or the qualifying\nrow count before LIMIT/OFFSET when SQL_CALC_FOUND_ROWS was requested. That count\nis computed once at the statement snapshot.",
     "evidence": [
       "sql/mysql_function_session.go:RecordMySQLFunctionResult",
-      "docs/wordpress.md:Fixes covered by permanent tests",
       "mysqlserver/found_rows_test.go"
     ]
   }

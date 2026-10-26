@@ -23,6 +23,7 @@ The generator converts project guides, nested benchmark reports, command README
 files, the project overview, and `TESTING.md` to HTML. It retains source revision
 information, rewrites links between local guides, and makes every rendered guide
 available through the documentation navigation.
+Generated guides retired from the source are removed during the refresh.
 Links to source code and benchmark artifacts open the upstream repository.
 The homepage examples and copy are maintained in `index.html`.
 
